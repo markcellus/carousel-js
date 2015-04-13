@@ -1,8 +1,9 @@
 'use strict';
-var utils = require('./utils');
 var CarouselPanels = require('./carousel-panels');
 var CarouselThumbs = require('./carousel-thumbs');
 var ElementKit = require('element-kit');
+console.log(ElementKit);
+var utils = ElementKit.utils;
 /**
  * A callback function that fires after a new active panel is set
  * @callback Carousel~onPanelChange
