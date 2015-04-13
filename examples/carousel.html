@@ -1,0 +1,53 @@
+<html>
+<head>
+
+    <style>
+        .carousel-image {
+            width: 400px;
+            height: 200px;
+            display: none;
+        }
+
+        .carousel-image-active {
+            display: block;
+        }
+
+        .carousel-thumb {
+            width: 10px;
+            height: 10px;
+            background-color: red;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+<div class="carousel">
+
+    <img class="carousel-image" src="http://www.gstatic.com/webp/gallery/1.jpg" />
+    <img class="carousel-image" src="http://www.gstatic.com/webp/gallery/2.jpg" />
+    <img class="carousel-image" src="http://www.gstatic.com/webp/gallery/3.jpg" />
+
+    <div class="carousel-thumbs">
+        <div class="carousel-thumb"></div>
+        <div class="carousel-thumb"></div>
+        <div class="carousel-thumb"></div>
+    </div>
+
+</div>
+<script src="path/to/rogue/carousel.js"></script>
+<script>
+    var carousel = new Carousel({
+        panels: document.getElementsByClassName('carousel-image'),
+        thumbnails: document.getElementsByClassName('carousel-thumb'),
+        panelActiveClass: 'carousel-image-active'
+    });
+
+    // go to second image
+    carousel.goTo(1);
+
+    // destroy
+    carousel.destroy();
+
+</script>
+</body>
+</html>

@@ -1,0 +1,32 @@
+{
+  "name": "carousel-module",
+  "version": "0.0.1",
+  "homepage": "https://github.com/mkay581/carousel-module",
+  "authors": [
+    "Mark Kennedy <mkay581@gmail.com>"
+  ],
+  "description": "A carousel class",
+  "moduleType": [
+    "amd",
+    "es6",
+    "node"
+  ],
+  "keywords": [
+    "module"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "main": "src/carousel.js",
+  "dependencies": {
+    "resource-manager-js": "*",
+    "promise": "~0.2.2",
+    "underscore": "~1.8.3",
+    "jquery": "~2.1.3"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "name": "carousel-module",
+  "version": "0.0.1",
+  "description": "A carousel class",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/mkay581/carousel-module.git"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/"
+  },
+  "author": {
+    "name": "Mark Kennedy",
+    "url": "http://heyimmark.com"
+  },
+  "main": "src/carousel.js",
+  "dependencies": {
+    "jquery": "^2.1.3",
+    "promise": "^7.0.0",
+    "resource-manager-js": "^1.0.1",
+    "underscore": "^1.8.3"
+  },
+  "devDependencies": {
+    "build-tools": "^1.2.7",
+    "sinon": "^1.14.1"
+  }
+}
