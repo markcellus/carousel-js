@@ -1,6 +1,6 @@
 'use strict';
-var utils = require('utils');
 var ElementKit = require('element-kit');
+var utils = ElementKit.utils;
 
 /**
  * A callback function that fires after a new active panel is set
