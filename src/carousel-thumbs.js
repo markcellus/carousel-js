@@ -67,6 +67,7 @@ var CarouselThumbs = Module.extend({
         }
         var index = this._thumbnailArr.indexOf(e.currentTarget);
         if (index !== -1 && index !== this.getCurrentIndex()) {
+            this.goTo(index);
             if (this.options.onChange) {
                 this.options.onChange(index);
             }

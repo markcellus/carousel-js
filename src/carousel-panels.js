@@ -2,6 +2,8 @@
 var _ = require('underscore');
 var ElementKit = require('element-kit');
 var Module = require('module.js');
+var Promise = require('promise');
+
 /**
  * A callback function that fires after a new active panel is set
  * @callback CarouselPanels~onChange
@@ -59,27 +61,33 @@ var CarouselPanels = Module.extend({
      * Transitions to a panel of an index.
      * @param {Number} index - The index number to go to
      * @memberOf CarouselPanels
+     * @returns {Promise}
      */
     goTo: function (index) {
-
         var maxIndex = this.options.panels.length - 1,
             minIndex = 0,
-            prevIndex = this.getCurrentIndex();
+            prevIndex = this.getCurrentIndex(),
+            errorMsg,
+            promise = Promise.resolve();
 
-        if (index > maxIndex || index < minIndex) {
-            console.error('carousel panel error: unable to transition to an index of ' + index + 'which does not exist!');
-        }
-
-        if (prevIndex === undefined || prevIndex !== index) {
-
+        if (typeof index !== 'number' || index > maxIndex || index < minIndex) {
+            errorMsg = 'carousel panel error: unable to transition to an index of ' + index + 'which does not exist!';
+            console.error(errorMsg);
+            promise = Promise.reject(new Error(errorMsg));
+        } else if (prevIndex === index) {
+            // already at index
+            promise = Promise.resolve();
+        } else {
             this._updatePanels(index);
-
+            if (this.options.autoLoadAssets) {
+                promise = this.loadPanelAssets(index);
+            }
             this._currentIndex = index;
-
             if (this.options.onChange) {
                 this.options.onChange(index)
             }
         }
+        return promise;
     },
 
     /**
@@ -95,9 +103,6 @@ var CarouselPanels = Module.extend({
             panels[prevIndex].kit.classList.remove(this.options.panelActiveClass);
         }
         panels[index].kit.classList.add(this.options.panelActiveClass);
-        if (this.options.autoLoadAssets) {
-            this.loadPanelAssets(index);
-        }
     },
 
     /**
@@ -113,42 +118,41 @@ var CarouselPanels = Module.extend({
      * Loads assets for a given panel.
      * @param {Number} index - The index of the panel containing the assets to load
      * @memberOf CarouselPanels
+     * @returns {Promise}
      */
     loadPanelAssets: function (index) {
         var panel = this.options.panels[index],
             assets = this.options.assetClass ? panel.getElementsByClassName(this.options.assetClass) : [panel],
             i,
             count = assets.length,
-            el;
+            el,
+            loadPromises = [];
         for (i = 0; i < count; i++) {
             el = assets[i];
-            if (el.getAttribute(this.options.lazyLoadAttr)) {
-                if (el.tagName.toLowerCase() === 'img') {
-                    this._loadImageAsset(el);
-                } else {
-                    console.warn('carousel error: no matching img elements to lazy load. try supplying a valid assetClass option to constructor');
-                }
+            if (el.tagName.toLowerCase() === 'img' && el.getAttribute(this.options.lazyLoadAttr)) {
+                loadPromises.push(this.loadPanelImageAsset(el));
             }
         }
+        return Promise.all(loadPromises);
     },
 
     /**
      * Manually lazy loads a resource using an element's data attribute.
-     * @param {HTMLElement} el - The image element to load
-     * @param {Function} [callback] - A function that fires when the asset is done loading
-     * @private
+     * @param {HTMLImageElement} el - The image element to load
      * @memberOf CarouselPanels
      */
-    _loadImageAsset: function (el, callback) {
-        var img = el || new Image(),
+    loadPanelImageAsset: function (el) {
+        var img = el,
             src = el.getAttribute(this.options.lazyLoadAttr),
             loadingClass = this.options.assetLoadingClass;
         img.kit.classList.add(loadingClass);
-        img.onload = function() {
-            img.kit.classList.remove(loadingClass);
-            callback ? callback() : null;
-        };
-        img.src = src;
+        return img.kit.load(src)
+            .then(function() {
+                img.kit.classList.remove(loadingClass);
+            })
+            .catch(function () {
+                img.kit.classList.remove(loadingClass);
+            });
     },
 
     /**
@@ -156,8 +160,12 @@ var CarouselPanels = Module.extend({
      * @memberOf CarouselPanels
      */
     destroy: function () {
-        var options = this.options;
-        options.panels[this.getCurrentIndex()].kit.classList.remove(options.panelActiveClass);
+        var options = this.options,
+            currentIndex = this.getCurrentIndex();
+
+        if (currentIndex) {
+            options.panels[currentIndex].kit.classList.remove(options.panelActiveClass);
+        }
         this._currentIndex = null;
     }
 });

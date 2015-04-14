@@ -130,11 +130,10 @@ var Carousel = Module.extend({
             index = maxIndex;
         }
 
-        this.panels.goTo(index);
-
         if (this.thumbnails) {
             this.thumbnails.goTo(index);
         }
+        return this.panels.goTo(index);
     },
 
     /**
