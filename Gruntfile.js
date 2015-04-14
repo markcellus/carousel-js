@@ -7,18 +7,19 @@ module.exports = function(grunt) {
             dist: 'dist',
             build: {
                 files: {
-                    'dist/scroll.js': ['src/scroll.js'],
-                    'dist/scroll-listener.js': ['src/scroll-listener.js']
+                    'dist/carousel.js': ['src/carousel.js']
                 },
                 browserifyOptions: {
-                    standalone: 'Scroll'
+                    standalone: 'Carousel'
                 }
             },
             min: {
                 files: {
-                    'dist/scroll-min.js': ['dist/scroll.js'],
-                    'dist/scroll-listener-min.js': ['dist/scroll-listener.js']
+                    'dist/carousel-min.js': ['dist/carousel.js']
                 }
+            },
+            banner: {
+                files: ['dist/*']
             },
             tests: {
                 mocha: {
