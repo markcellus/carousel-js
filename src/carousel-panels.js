@@ -1,6 +1,9 @@
 'use strict';
 var _ = require('underscore');
 var ElementKit = require('element-kit');
+var Module = require('module.js');
+var Promise = require('promise');
+
 /**
  * A callback function that fires after a new active panel is set
  * @callback CarouselPanels~onChange
@@ -12,23 +15,19 @@ var ElementKit = require('element-kit');
  * to customize the the javascript logic for the "panels" of the Carousel (assuming that you actually
  * know what you're doing when you do so).
  * @constructor CarouselPanels
- * @param {object} options - Options passed into instance
- * @param {HTMLCollection} options.panels - The panels in which to use for the carousel (an array of photos)
- * @param {string} [options.assetClass] - The CSS class of the asset images inside of the DOM
- * @param {string} [options.assetLoadingClass] - The CSS class that gets added to an asset when it is loading
- * @param {boolean} [options.autoLoadAssets] - Whether or not to automatically load assets when active
- * @param {string} [options.panelActiveClass] - The CSS class that gets added to an panel when it becomes active
- * @param {CarouselPanels~onChange} [options.onChange] - When the current panel is changed
- * @param {string} [options.lazyLoadAttr] - The attribute containing the url path to content that is to be lazy loaded
  */
-var CarouselPanels = function (options) {
-    this.initialize(options);
-};
-
-CarouselPanels.prototype = {
+var CarouselPanels = Module.extend({
 
     /**
      * When the carousel is instantiated.
+     * @param {object} options - Options passed into instance
+     * @param {HTMLCollection} options.panels - The panels in which to use for the carousel (an array of photos)
+     * @param {string} [options.assetClass] - The CSS class of the asset images inside of the DOM
+     * @param {string} [options.assetLoadingClass] - The CSS class that gets added to an asset when it is loading
+     * @param {boolean} [options.autoLoadAssets] - Whether or not to automatically load assets when active
+     * @param {string} [options.panelActiveClass] - The CSS class that gets added to an panel when it becomes active
+     * @param {CarouselPanels~onChange} [options.onChange] - When the current panel is changed
+     * @param {string} [options.lazyLoadAttr] - The attribute containing the url path to content that is to be lazy loaded
      */
     initialize: function (options) {
 
@@ -62,27 +61,33 @@ CarouselPanels.prototype = {
      * Transitions to a panel of an index.
      * @param {Number} index - The index number to go to
      * @memberOf CarouselPanels
+     * @returns {Promise}
      */
     goTo: function (index) {
-
         var maxIndex = this.options.panels.length - 1,
             minIndex = 0,
-            prevIndex = this.getCurrentIndex();
+            prevIndex = this.getCurrentIndex(),
+            errorMsg,
+            promise = Promise.resolve();
 
-        if (index > maxIndex || index < minIndex) {
-            console.error('carousel panel error: unable to transition to an index of ' + index + 'which does not exist!');
-        }
-
-        if (prevIndex === undefined || prevIndex !== index) {
-
+        if (typeof index !== 'number' || index > maxIndex || index < minIndex) {
+            errorMsg = 'carousel panel error: unable to transition to an index of ' + index + 'which does not exist!';
+            console.error(errorMsg);
+            promise = Promise.reject(new Error(errorMsg));
+        } else if (prevIndex === index) {
+            // already at index
+            promise = Promise.resolve();
+        } else {
             this._updatePanels(index);
-
+            if (this.options.autoLoadAssets) {
+                promise = this.loadPanelAssets(index);
+            }
             this._currentIndex = index;
-
             if (this.options.onChange) {
                 this.options.onChange(index)
             }
         }
+        return promise;
     },
 
     /**
@@ -98,9 +103,6 @@ CarouselPanels.prototype = {
             panels[prevIndex].kit.classList.remove(this.options.panelActiveClass);
         }
         panels[index].kit.classList.add(this.options.panelActiveClass);
-        if (this.options.autoLoadAssets) {
-            this.loadPanelAssets(index);
-        }
     },
 
     /**
@@ -116,42 +118,41 @@ CarouselPanels.prototype = {
      * Loads assets for a given panel.
      * @param {Number} index - The index of the panel containing the assets to load
      * @memberOf CarouselPanels
+     * @returns {Promise}
      */
     loadPanelAssets: function (index) {
         var panel = this.options.panels[index],
             assets = this.options.assetClass ? panel.getElementsByClassName(this.options.assetClass) : [panel],
             i,
             count = assets.length,
-            el;
+            el,
+            loadPromises = [];
         for (i = 0; i < count; i++) {
             el = assets[i];
-            if (el.getAttribute(this.options.lazyLoadAttr)) {
-                if (el.tagName.toLowerCase() === 'img') {
-                    this._loadImageAsset(el);
-                } else {
-                    console.warn('carousel error: no matching img elements to lazy load. try supplying a valid assetClass option to constructor');
-                }
+            if (el.tagName.toLowerCase() === 'img' && el.getAttribute(this.options.lazyLoadAttr)) {
+                loadPromises.push(this.loadPanelImageAsset(el));
             }
         }
+        return Promise.all(loadPromises);
     },
 
     /**
      * Manually lazy loads a resource using an element's data attribute.
-     * @param {HTMLElement} el - The image element to load
-     * @param {Function} [callback] - A function that fires when the asset is done loading
-     * @private
+     * @param {HTMLImageElement} el - The image element to load
      * @memberOf CarouselPanels
      */
-    _loadImageAsset: function (el, callback) {
-        var img = el || new Image(),
+    loadPanelImageAsset: function (el) {
+        var img = el,
             src = el.getAttribute(this.options.lazyLoadAttr),
             loadingClass = this.options.assetLoadingClass;
         img.kit.classList.add(loadingClass);
-        img.onload = function() {
-            img.kit.classList.remove(loadingClass);
-            callback ? callback() : null;
-        };
-        img.src = src;
+        return img.kit.load(src)
+            .then(function() {
+                img.kit.classList.remove(loadingClass);
+            })
+            .catch(function () {
+                img.kit.classList.remove(loadingClass);
+            });
     },
 
     /**
@@ -159,10 +160,14 @@ CarouselPanels.prototype = {
      * @memberOf CarouselPanels
      */
     destroy: function () {
-        var options = this.options;
-        options.panels[this.getCurrentIndex()].kit.classList.remove(options.panelActiveClass);
+        var options = this.options,
+            currentIndex = this.getCurrentIndex();
+
+        if (currentIndex) {
+            options.panels[currentIndex].kit.classList.remove(options.panelActiveClass);
+        }
         this._currentIndex = null;
     }
-};
+});
 
 module.exports = CarouselPanels;

@@ -1,6 +1,7 @@
 'use strict';
 var ElementKit = require('element-kit');
 var utils = ElementKit.utils;
+var Module = require('module.js');
 
 /**
  * A callback function that fires after a new active panel is set
@@ -13,20 +14,15 @@ var utils = ElementKit.utils;
  * want to customize the javascript logic for the "thumbnails" of your Carousel instance (assuming that you actually
  * know what you're doing when you do so).
  * @class CarouselThumbs
- * @param {object} options - Options passed into instance
- * @param {HTMLCollection} [options.thumbnails] - A collection of elements that are the thumbnails
- * @param {string} [options.thumbnailActiveClass] - The CSS class that gets added to a thumbnail element when it becomes active
- * @param {CarouselThumbs~onChange} [options.onChange] - When a new thumbnail becomes active
  */
-var CarouselThumbs = function (options) {
-    this.initialize(options);
-};
-
-CarouselThumbs.prototype = {
+var CarouselThumbs = Module.extend({
 
     /**
      * When carousel is instantiated.
-     * @param options
+     * @param {object} options - Options passed into instance
+     * @param {HTMLCollection} [options.thumbnails] - A collection of elements that are the thumbnails
+     * @param {string} [options.thumbnailActiveClass] - The CSS class that gets added to a thumbnail element when it becomes active
+     * @param {CarouselThumbs~onChange} [options.onChange] - When a new thumbnail becomes active
      * @memberOf CarouselThumbs
      */
     initialize: function (options) {
@@ -71,6 +67,7 @@ CarouselThumbs.prototype = {
         }
         var index = this._thumbnailArr.indexOf(e.currentTarget);
         if (index !== -1 && index !== this.getCurrentIndex()) {
+            this.goTo(index);
             if (this.options.onChange) {
                 this.options.onChange(index);
             }
@@ -141,6 +138,6 @@ CarouselThumbs.prototype = {
             ]);
         }
     }
-};
+});
 
 module.exports = CarouselThumbs;
