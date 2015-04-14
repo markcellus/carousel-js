@@ -1,6 +1,7 @@
 'use strict';
 var _ = require('underscore');
 var ElementKit = require('element-kit');
+var Module = require('module.js');
 /**
  * A callback function that fires after a new active panel is set
  * @callback CarouselPanels~onChange
@@ -12,23 +13,19 @@ var ElementKit = require('element-kit');
  * to customize the the javascript logic for the "panels" of the Carousel (assuming that you actually
  * know what you're doing when you do so).
  * @constructor CarouselPanels
- * @param {object} options - Options passed into instance
- * @param {HTMLCollection} options.panels - The panels in which to use for the carousel (an array of photos)
- * @param {string} [options.assetClass] - The CSS class of the asset images inside of the DOM
- * @param {string} [options.assetLoadingClass] - The CSS class that gets added to an asset when it is loading
- * @param {boolean} [options.autoLoadAssets] - Whether or not to automatically load assets when active
- * @param {string} [options.panelActiveClass] - The CSS class that gets added to an panel when it becomes active
- * @param {CarouselPanels~onChange} [options.onChange] - When the current panel is changed
- * @param {string} [options.lazyLoadAttr] - The attribute containing the url path to content that is to be lazy loaded
  */
-var CarouselPanels = function (options) {
-    this.initialize(options);
-};
-
-CarouselPanels.prototype = {
+var CarouselPanels = Module.extend({
 
     /**
      * When the carousel is instantiated.
+     * @param {object} options - Options passed into instance
+     * @param {HTMLCollection} options.panels - The panels in which to use for the carousel (an array of photos)
+     * @param {string} [options.assetClass] - The CSS class of the asset images inside of the DOM
+     * @param {string} [options.assetLoadingClass] - The CSS class that gets added to an asset when it is loading
+     * @param {boolean} [options.autoLoadAssets] - Whether or not to automatically load assets when active
+     * @param {string} [options.panelActiveClass] - The CSS class that gets added to an panel when it becomes active
+     * @param {CarouselPanels~onChange} [options.onChange] - When the current panel is changed
+     * @param {string} [options.lazyLoadAttr] - The attribute containing the url path to content that is to be lazy loaded
      */
     initialize: function (options) {
 
@@ -163,6 +160,6 @@ CarouselPanels.prototype = {
         options.panels[this.getCurrentIndex()].kit.classList.remove(options.panelActiveClass);
         this._currentIndex = null;
     }
-};
+});
 
 module.exports = CarouselPanels;

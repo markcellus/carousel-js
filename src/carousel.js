@@ -3,6 +3,7 @@ var CarouselPanels = require('./carousel-panels');
 var CarouselThumbs = require('./carousel-thumbs');
 var ElementKit = require('element-kit');
 var utils = ElementKit.utils;
+var Module = require('module.js');
 /**
  * A callback function that fires after a new active panel is set
  * @callback Carousel~onPanelChange
@@ -24,11 +25,8 @@ var utils = ElementKit.utils;
  * @param {string} [options.thumbnailActiveClass] - The CSS class that gets added to a thumbnail element when it becomes active
  * @param {Number} [options.initialIndex] - The index of the panel to go to upon instantiation (if not declared, goTo() must be called manually).
  */
-var Carousel = function (options) {
-    this.initialize(options);
-};
 
-Carousel.prototype = {
+var Carousel = Module.extend({
 
     /**
      * Sets up stuff.
@@ -140,16 +138,6 @@ Carousel.prototype = {
     },
 
     /**
-     * Transitions the carousel to a panel of an index.
-     * @param {Number} index - The index number to go to
-     * @deprecated since 2.2.2
-     * @memberOf Carousel
-     */
-    goToPanel: function (index) {
-        this.goTo(index);
-    },
-
-    /**
      * Gets the current index that is showing.
      * @returns {Number} Returns the index
      * @memberOf Carousel
@@ -182,6 +170,6 @@ Carousel.prototype = {
             this.thumbnails.destroy();
         }
     }
-};
+});
 
 module.exports = Carousel;
