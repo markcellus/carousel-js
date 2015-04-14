@@ -24,6 +24,7 @@
   },
   "devDependencies": {
     "build-tools": "^1.3.0",
+    "element-kit": "^1.0.3",
     "sinon": "^1.14.1"
   }
 }
