@@ -15,7 +15,7 @@
   },
   "main": "src/carousel.js",
   "dependencies": {
-    "element-kit": "^1.0.0",
+    "element-kit": "*",
     "jquery": "^2.1.3",
     "module.js": "^1.0.5",
     "promise": "^7.0.0",
