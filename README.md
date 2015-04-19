@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/mkay581/carousel-module.svg?branch=master)](https://travis-ci.org/mkay581/carousel-module)
+
 # Carousel
 
 A lightweight and flexible Carousel class that allows you to build fully functional, advanced Carousels with minimal javascript and markup.

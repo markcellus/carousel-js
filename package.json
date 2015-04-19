@@ -25,5 +25,8 @@
   "devDependencies": {
     "build-tools": "^1.3.0",
     "sinon": "^1.14.1"
+  },
+  "scripts": {
+    "test": "grunt bt:test"
   }
 }
