@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/mkay581/carousel-module.svg?branch=master)](https://travis-ci.org/mkay581/carousel-module)
+[![Build Status](https://travis-ci.org/mkay581/carousel-js.svg?branch=master)](https://travis-ci.org/mkay581/carousel-js)
 
 # Carousel
 

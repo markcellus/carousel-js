@@ -1,10 +1,10 @@
 {
-  "name": "carousel-module",
-  "version": "1.1.2",
+  "name": "carousel-js",
+  "version": "1.1.3",
   "description": "A carousel class",
   "repository": {
     "type": "git",
-    "url": "git://github.com/mkay581/carousel-module.git"
+    "url": "git://github.com/mkay581/carousel-js.git"
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
