@@ -34,6 +34,8 @@ var CarouselThumbs = Module.extend({
             onChange: null
         }, options);
 
+        Module.prototype.initialize.call(this, this.options);
+
         this.setup();
 
     },
@@ -137,6 +139,7 @@ var CarouselThumbs = Module.extend({
                 this
             ]);
         }
+        Module.prototype.destroy.call(this);
     }
 });
 
