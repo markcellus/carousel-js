@@ -1,9 +1,11 @@
 'use strict';
 var CarouselPanels = require('./carousel-panels');
 var CarouselThumbs = require('./carousel-thumbs');
+var CarouselArrows = require('./carousel-arrows');
 var ElementKit = require('element-kit');
 var utils = ElementKit.utils;
 var Module = require('module.js');
+var _ = require('underscore');
 /**
  * A callback function that fires after a new active panel is set
  * @callback Carousel~onPanelChange
@@ -45,10 +47,19 @@ var Carousel = Module.extend({
             thumbnails: [],
             thumbnailActiveTriggerEvent: 'click',
             thumbnailActiveClass: 'carousel-thumbnail-active',
-            initialIndex: 0
+            initialIndex: 0,
+            leftArrow: null,
+            rightArrow: null,
+            arrowActiveClass: 'carousel-arrow-active',
+            arrowDisabledClass: 'carousel-arrow-disabled',
+            onLeftArrowClick: null,
+            onRightArrowClick: null
         }, options);
 
         this._checkForInitErrors();
+
+        Module.prototype.initialize.call(this, this.options);
+
         this.setup();
     },
 
@@ -58,18 +69,27 @@ var Carousel = Module.extend({
      */
     setup: function () {
 
-        this.panels = new CarouselPanels(utils.extend({}, this.options, {
+        var options = this.options,
+            internalOptions = _.extend({}, this.options); // make clone of original options
+
+        this.panels = new CarouselPanels(utils.extend({}, options, {
             onChange: this.onPanelChange.bind(this)
         }));
 
-        if (this.options.thumbnails.length) {
-            this.thumbnails = new CarouselThumbs(utils.extend({}, this.options, {
+        if (options.thumbnails.length) {
+            this.thumbnails = new CarouselThumbs(utils.extend({}, options, {
                 onChange: this.onThumbnailChange.bind(this)
             }));
         }
 
-        if (typeof this.options.initialIndex === 'number') {
-            this.goTo(this.options.initialIndex);
+        if (options.leftArrow || options.rightArrow) {
+            internalOptions.onLeftArrowClick = this.onLeftArrowClick.bind(this);
+            internalOptions.onRightArrowClick = this.onRightArrowClick.bind(this);
+            this.subModules.arrows = new CarouselArrows(internalOptions);
+        }
+
+        if (typeof options.initialIndex === 'number') {
+            this.goTo(options.initialIndex);
         }
     },
 
@@ -98,6 +118,11 @@ var Carousel = Module.extend({
         if (this.thumbnails) {
             this.thumbnails.goTo(index);
         }
+
+        if (this.subModules.arrows) {
+            this.subModules.arrows.update(index);
+        }
+
         if (this.options.onPanelChange) {
             this.options.onPanelChange(index)
         }
@@ -110,6 +135,28 @@ var Carousel = Module.extend({
      */
     onThumbnailChange: function (index) {
         this.goTo(index);
+    },
+
+    /**
+     * When the right arrow of the carousel is clicked.
+     * @param e
+     */
+    onRightArrowClick: function (e) {
+        this.goTo(this.panels.getCurrentIndex() + 1);
+        if (this.options.onRightArrowClick) {
+            this.options.onRightArrowClick(e);
+        }
+    },
+
+    /**
+     * When the left arrow of the carousel is clicked.
+     * @param e
+     */
+    onLeftArrowClick: function (e) {
+        this.goTo(this.panels.getCurrentIndex() - 1);
+        if (this.options.onLeftArrowClick) {
+            this.options.onLeftArrowClick(e);
+        }
     },
 
     /**
@@ -132,6 +179,9 @@ var Carousel = Module.extend({
 
         if (this.thumbnails) {
             this.thumbnails.goTo(index);
+        }
+        if (this.subModules.arrows) {
+            this.subModules.arrows.update(index);
         }
         return this.panels.goTo(index);
     },
@@ -168,6 +218,7 @@ var Carousel = Module.extend({
         if (this.thumbnails) {
             this.thumbnails.destroy();
         }
+        Module.prototype.destroy.call(this);
     }
 });
 
