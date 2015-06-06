@@ -42,6 +42,7 @@ var CarouselPanels = Module.extend({
         }, options);
 
         this._checkForInitErrors();
+        Module.prototype.initialize.call(this, this.options);
     },
 
     /**
@@ -167,6 +168,7 @@ var CarouselPanels = Module.extend({
             options.panels[currentIndex].kit.classList.remove(options.panelActiveClass);
         }
         this._currentIndex = null;
+        Module.prototype.destroy.call(this);
     }
 });
 

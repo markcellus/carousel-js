@@ -1,6 +1,9 @@
 var sinon = require('sinon');
 var Carousel = require('../src/carousel');
+var CarouselArrows = require('../src/carousel-arrows');
 var assert = require('assert');
+var Module = require('module.js');
+var TestUtils = require('test-utils');
 
 describe('Carousel', function () {
     var fixture;
@@ -135,6 +138,100 @@ describe('Carousel', function () {
         carouselView.prev();
         assert.equal(goToSpy.args[1][0], 1, 'prev() calls goTo with second panel index when on third one');
         goToSpy.restore();
+        carouselView.destroy();
+    });
+
+    it('should NOT instantiate CarouselArrows if no left or right arrow is declared in initialize options', function () {
+        var fixture = document.getElementById('qunit-fixture');
+        var carouselArrowsInitializeStub = sinon.stub(CarouselArrows.prototype, 'initialize');
+        var carouselArrowsDestroyStub = sinon.stub(CarouselArrows.prototype, 'destroy');
+        var carouselEl = document.createElement('div');
+        carouselEl.innerHTML =
+            '<div class="carousel-panel"></div>' +
+            '<div class="carousel-panel"></div>' +
+            '<div class="carousel-panel"></div>';
+        var panels = carouselEl.getElementsByClassName('carousel-panel');
+        var carouselView = new Carousel({
+            panels: panels
+        });
+        assert.equal(carouselArrowsInitializeStub.callCount, 0);
+        carouselArrowsInitializeStub.restore();
+        carouselArrowsDestroyStub.restore();
+        carouselView.destroy();
+    });
+
+    it('should pass arrows and panels in initialize options to CarouselArrows', function () {
+        var fixture = document.getElementById('qunit-fixture');
+        var carouselArrowsInitializeSpy = sinon.spy(CarouselArrows.prototype, 'initialize');
+        var carouselArrowsDestroySpy = sinon.spy(CarouselArrows.prototype, 'destroy');
+        var carouselEl = document.createElement('div');
+        carouselEl.innerHTML =
+            '<div class="carousel-panel"></div>' +
+            '<div class="carousel-panel"></div>' +
+            '<div class="carousel-panel"></div>';
+        var leftArrow = document.createElement('div');
+        var rightArrow = document.createElement('div');
+        var panels = carouselEl.getElementsByClassName('carousel-panel');
+        var carouselView = new Carousel({
+            panels: panels,
+            leftArrow: leftArrow,
+            rightArrow: rightArrow
+        });
+        assert.deepEqual(carouselArrowsInitializeSpy.args[0][0].panels, panels, 'panels were passed to carousel arrows');
+        assert.deepEqual(carouselArrowsInitializeSpy.args[0][0].leftArrow, leftArrow, 'left arrow is passed to carousel arrows');
+        assert.deepEqual(carouselArrowsInitializeSpy.args[0][0].rightArrow, rightArrow, 'right arrow was passed to carousel arrows');
+        carouselArrowsInitializeSpy.restore();
+        carouselArrowsDestroySpy.restore();
+        carouselView.destroy();
+    });
+
+    it('should call destroy on CarouselArrows when destroy() is called', function () {
+        var fixture = document.getElementById('qunit-fixture');
+        var carouselArrowsInitializeSpy = sinon.spy(CarouselArrows.prototype, 'initialize');
+        var carouselArrowsDestroySpy = sinon.spy(CarouselArrows.prototype, 'destroy');
+        var carouselEl = document.createElement('div');
+        carouselEl.innerHTML =
+            '<div class="carousel-panel"></div>' +
+            '<div class="carousel-panel"></div>' +
+            '<div class="carousel-panel"></div>';
+        var leftArrow = document.createElement('div');
+        var rightArrow = document.createElement('div');
+        var panels = carouselEl.getElementsByClassName('carousel-panel');
+        var carouselView = new Carousel({
+            panels: panels,
+            leftArrow: leftArrow,
+            rightArrow: rightArrow
+        });
+        carouselView.destroy();
+        assert.equal(carouselArrowsDestroySpy.callCount, 1);
+        carouselArrowsInitializeSpy.restore();
+        carouselArrowsDestroySpy.restore();
+    });
+
+    it('should call onLeftArrowClick when left arrow is clicked', function () {
+        var fixture = document.getElementById('qunit-fixture');
+        var carouselArrowsInitializeSpy = sinon.spy(CarouselArrows.prototype, 'initialize');
+        var carouselArrowsDestroySpy = sinon.spy(CarouselArrows.prototype, 'destroy');
+        var carouselEl = document.createElement('div');
+        carouselEl.innerHTML =
+            '<div class="carousel-panel"></div>' +
+            '<div class="carousel-panel"></div>' +
+            '<div class="carousel-panel"></div>';
+        var leftArrow = document.createElement('div');
+        var leftArrowClickSpy = sinon.spy();
+        var panels = carouselEl.getElementsByClassName('carousel-panel');
+        var carouselView = new Carousel({
+            panels: panels,
+            leftArrow: leftArrow,
+            onLeftArrowClick: leftArrowClickSpy
+        });
+        // go to second panel so that left arrow is enabled
+        carouselView.goTo(1);
+        var clickEvent = TestUtils.createEvent('click');
+        leftArrow.dispatchEvent(clickEvent);
+        assert.equal(leftArrowClickSpy.args[0][0], clickEvent, 'click callback was called and passed click event');
+        carouselArrowsInitializeSpy.restore();
+        carouselArrowsDestroySpy.restore();
         carouselView.destroy();
     });
 
