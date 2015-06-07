@@ -17,7 +17,6 @@ var _ = require('underscore');
  * @class Carousel
  * @param {object} options - Options passed into instance
  * @param {HTMLCollection} options.panels - The panels in which to use for the carousel (an array of photos)
- * @param {string} [options.assetClass] - The CSS class of the asset images inside of the DOM
  * @param {string} [options.assetLoadingClass] - The CSS class that gets added to an asset when it is loading
  * @param {boolean} [options.autoLoadAssets] - Whether or not to automatically load assets when active
  * @param {string} [options.panelActiveClass] - The CSS class that gets added to an panel when it becomes active
@@ -38,7 +37,6 @@ var Carousel = Module.extend({
 
         this.options = utils.extend({
             panels: [],
-            assetClass: null,
             assetLoadingClass: 'carousel-asset-loading',
             autoLoadAssets: true,
             panelActiveClass: 'carousel-panel-active',
