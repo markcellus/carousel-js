@@ -7,16 +7,68 @@ This library is built using native vanilla javascript. Which means super fast pe
 
 ## Usage
 
-Create a carousel based off of a set of predetermined markup. Assuming, you have your html in the DOM and CSS
-set up correctly. You can do:
+### Carousel
+
+You can create a carousel based off of a set of predetermined markup. Assuming you have the appropriate elements
+already in the DOM and have your CSS set up correctly to show and hide the styles. You can setup Carousel
+and navigate to panels programmatically.
+
+```javascript
+var carousel = new Carousel({
+    panels: document.getElementsByClassName('carousel-panel')
+});
+
+carousel.goTo(1); // go to second carousel panel
+```
+
+### Carousel with Clickable Thumbnails
+
+Create a carousel with thumbnails based off of a set of predetermined markup. Assuming, you have your html in the DOM and CSS
+set up correctly. You can use the Carousel class to add interactivity:
+
+```javascript
+var thumbnails = document.getElementsByClassName('carousel-thumbnail');
+
+var carousel = new Carousel({
+    panels: document.getElementsByClassName('carousel-panel'),
+    thumbnails: thumbnails
+});
+
+// click on second thumbnail to show second panel
+thumbnails[1].click();
+```
+
+More details and example can be found [here](examples/carousel-with-thumbnails.html).
+
+### Carousel Image Lazy Loading
+
+The carousel class also allows lazy loading images so that you can ensure that large image assets
+only load when transitioning to the panel they reside in. This saves us from hogging the user's bandwidth and downloading
+all image assets before a user navigates to it.
+To use the lazy loading functionality, let's assume you have the following in the DOM already:
+
+```html
+<div class="carousel-panel">
+    <img data-lazy-src="http://www.gstatic.com/webp/gallery/1.jpg" src="" />
+</div>
+<div class="carousel-panel">
+    <img data-lazy-src="http://www.gstatic.com/webp/gallery/2.jpg" src="" />
+</div>
+```
+
+Then you can do this:
 
 ```javascript
 var carousel = new Carousel({
     panels: document.getElementsByClassName('carousel-panel'),
-    thumbnails: document.getElementsByClassName('carousel-thumbnail')
+    panelActiveClass: 'carousel-panel-active',
+    lazyLoadAttr: 'data-lazy-src',
+    assetLoadingClass: 'image-loading'
 });
 
-carousel.goTo(1); // go to second carousel item
+// go to second panel and lazy load the image it contains
+carousel.goTo(1);
+
 ```
 
-More details and example can be found [here](examples/carousel.html).
+A more in-depth, working example of Carousel's lazy loading can be found [here](examples/carousel-image-lazy-loading.html).
