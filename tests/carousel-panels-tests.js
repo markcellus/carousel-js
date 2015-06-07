@@ -72,8 +72,7 @@ describe('Carousel Panels', function () {
             '</div>';
         var loadPanelImageAssetStub = sinon.stub(CarouselPanels.prototype, 'loadPanelImageAsset');
         var panelsView = new CarouselPanels({
-            panels: carouselEl.getElementsByClassName('carousel-panel'),
-            assetClass: 'carousel-item'
+            panels: carouselEl.getElementsByClassName('carousel-panel')
         });
         var images = carouselEl.getElementsByTagName('img');
         panelsView.goTo(0);

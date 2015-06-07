@@ -22,7 +22,6 @@ var CarouselPanels = Module.extend({
      * When the carousel is instantiated.
      * @param {object} options - Options passed into instance
      * @param {HTMLCollection} options.panels - The panels in which to use for the carousel (an array of photos)
-     * @param {string} [options.assetClass] - The CSS class of the asset images inside of the DOM
      * @param {string} [options.assetLoadingClass] - The CSS class that gets added to an asset when it is loading
      * @param {boolean} [options.autoLoadAssets] - Whether or not to automatically load assets when active
      * @param {string} [options.panelActiveClass] - The CSS class that gets added to an panel when it becomes active
@@ -33,7 +32,6 @@ var CarouselPanels = Module.extend({
 
         this.options = _.extend({
             panels: [],
-            assetClass: null,
             assetLoadingClass: 'carousel-asset-loading',
             autoLoadAssets: true,
             panelActiveClass: 'carousel-panel-active',
@@ -122,18 +120,25 @@ var CarouselPanels = Module.extend({
      * @returns {Promise}
      */
     loadPanelAssets: function (index) {
-        var panel = this.options.panels[index],
-            assets = this.options.assetClass ? panel.getElementsByClassName(this.options.assetClass) : [panel],
-            i,
-            count = assets.length,
-            el,
+        var options = this.options,
+            panel = options.panels[index],
+            assets = panel.querySelectorAll('[' + options.lazyLoadAttr + ']'),
             loadPromises = [];
-        for (i = 0; i < count; i++) {
-            el = assets[i];
-            if (el.tagName.toLowerCase() === 'img' && el.getAttribute(this.options.lazyLoadAttr)) {
+
+        // convert NodeList to real array in order to call Array methods on it
+        assets = Array.prototype.slice.call(assets);
+
+        // if panel has lazy load attribute, add to loadable assets
+        if (panel.getAttribute(options.lazyLoadAttr)) {
+            assets.push(panel);
+        }
+
+        assets.forEach(function (el) {
+            if (el.tagName.toLowerCase() === 'img') {
                 loadPromises.push(this.loadPanelImageAsset(el));
             }
-        }
+        }, this);
+
         return Promise.all(loadPromises);
     },
 

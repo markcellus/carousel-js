@@ -1,10 +1,10 @@
 /** 
-* carousel-js - v1.3.0.
+* carousel-js - v1.3.1.
 * git://github.com/mkay581/carousel-js.git
 * Copyright 2015 Mark Kennedy. Licensed MIT.
 */
 
-(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+(function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.Carousel = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 /*global define:false require:false */
 module.exports = (function(){
 	// Import Events
@@ -14662,7 +14662,6 @@ var CarouselPanels = Module.extend({
      * When the carousel is instantiated.
      * @param {object} options - Options passed into instance
      * @param {HTMLCollection} options.panels - The panels in which to use for the carousel (an array of photos)
-     * @param {string} [options.assetClass] - The CSS class of the asset images inside of the DOM
      * @param {string} [options.assetLoadingClass] - The CSS class that gets added to an asset when it is loading
      * @param {boolean} [options.autoLoadAssets] - Whether or not to automatically load assets when active
      * @param {string} [options.panelActiveClass] - The CSS class that gets added to an panel when it becomes active
@@ -14673,7 +14672,6 @@ var CarouselPanels = Module.extend({
 
         this.options = _.extend({
             panels: [],
-            assetClass: null,
             assetLoadingClass: 'carousel-asset-loading',
             autoLoadAssets: true,
             panelActiveClass: 'carousel-panel-active',
@@ -14762,18 +14760,25 @@ var CarouselPanels = Module.extend({
      * @returns {Promise}
      */
     loadPanelAssets: function (index) {
-        var panel = this.options.panels[index],
-            assets = this.options.assetClass ? panel.getElementsByClassName(this.options.assetClass) : [panel],
-            i,
-            count = assets.length,
-            el,
+        var options = this.options,
+            panel = options.panels[index],
+            assets = panel.querySelectorAll('[' + options.lazyLoadAttr + ']'),
             loadPromises = [];
-        for (i = 0; i < count; i++) {
-            el = assets[i];
-            if (el.tagName.toLowerCase() === 'img' && el.getAttribute(this.options.lazyLoadAttr)) {
+
+        // convert NodeList to real array in order to call Array methods on it
+        assets = Array.prototype.slice.call(assets);
+
+        // if panel has lazy load attribute, add to loadable assets
+        if (panel.getAttribute(options.lazyLoadAttr)) {
+            assets.push(panel);
+        }
+
+        assets.forEach(function (el) {
+            if (el.tagName.toLowerCase() === 'img') {
                 loadPromises.push(this.loadPanelImageAsset(el));
             }
-        }
+        }, this);
+
         return Promise.all(loadPromises);
     },
 
@@ -14980,7 +14985,6 @@ var _ = require('underscore');
  * @class Carousel
  * @param {object} options - Options passed into instance
  * @param {HTMLCollection} options.panels - The panels in which to use for the carousel (an array of photos)
- * @param {string} [options.assetClass] - The CSS class of the asset images inside of the DOM
  * @param {string} [options.assetLoadingClass] - The CSS class that gets added to an asset when it is loading
  * @param {boolean} [options.autoLoadAssets] - Whether or not to automatically load assets when active
  * @param {string} [options.panelActiveClass] - The CSS class that gets added to an panel when it becomes active
@@ -15001,7 +15005,6 @@ var Carousel = Module.extend({
 
         this.options = utils.extend({
             panels: [],
-            assetClass: null,
             assetLoadingClass: 'carousel-asset-loading',
             autoLoadAssets: true,
             panelActiveClass: 'carousel-panel-active',
@@ -15186,4 +15189,5 @@ var Carousel = Module.extend({
 });
 
 module.exports = Carousel;
-},{"./carousel-arrows":25,"./carousel-panels":26,"./carousel-thumbs":27,"element-kit":4,"module.js":12,"underscore":24}]},{},[28]);
+},{"./carousel-arrows":25,"./carousel-panels":26,"./carousel-thumbs":27,"element-kit":4,"module.js":12,"underscore":24}]},{},[28])(28)
+});
