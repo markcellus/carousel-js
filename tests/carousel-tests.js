@@ -1,8 +1,9 @@
 var sinon = require('sinon');
 var Carousel = require('../src/carousel');
 var CarouselArrows = require('../src/carousel-arrows');
+var CarouselThumbs = require('../src/carousel-thumbs');
+var CarouselPanels = require('../src/carousel-panels');
 var assert = require('assert');
-var Module = require('module.js');
 var TestUtils = require('test-utils');
 
 describe('Carousel', function () {
@@ -155,9 +156,9 @@ describe('Carousel', function () {
             panels: panels
         });
         assert.equal(carouselArrowsInitializeStub.callCount, 0);
+        carouselView.destroy();
         carouselArrowsInitializeStub.restore();
         carouselArrowsDestroyStub.restore();
-        carouselView.destroy();
     });
 
     it('should pass arrows and panels in initialize options to CarouselArrows', function () {
@@ -180,9 +181,9 @@ describe('Carousel', function () {
         assert.deepEqual(carouselArrowsInitializeSpy.args[0][0].panels, panels, 'panels were passed to carousel arrows');
         assert.deepEqual(carouselArrowsInitializeSpy.args[0][0].leftArrow, leftArrow, 'left arrow is passed to carousel arrows');
         assert.deepEqual(carouselArrowsInitializeSpy.args[0][0].rightArrow, rightArrow, 'right arrow was passed to carousel arrows');
+        carouselView.destroy();
         carouselArrowsInitializeSpy.restore();
         carouselArrowsDestroySpy.restore();
-        carouselView.destroy();
     });
 
     it('should call destroy on CarouselArrows when destroy() is called', function () {
@@ -230,8 +231,102 @@ describe('Carousel', function () {
         var clickEvent = TestUtils.createEvent('click');
         leftArrow.dispatchEvent(clickEvent);
         assert.equal(leftArrowClickSpy.args[0][0], clickEvent, 'click callback was called and passed click event');
+        carouselView.destroy();
         carouselArrowsInitializeSpy.restore();
         carouselArrowsDestroySpy.restore();
+    });
+
+    it('should NOT instantiate CarouselThumbs if null/undefined is passed as thumbnail option', function () {
+        var fixture = document.getElementById('qunit-fixture');
+        var carouselThumbsInitializeStub = sinon.stub(CarouselThumbs.prototype, 'initialize');
+        var carouselThumbsDestroyStub = sinon.stub(CarouselThumbs.prototype, 'destroy');
+        var carouselView = new Carousel({
+            thumbnails: null
+        });
+        assert.equal(carouselThumbsInitializeStub.callCount, 0);
+        carouselView.destroy();
+        carouselThumbsInitializeStub.restore();
+        carouselThumbsDestroyStub.restore();
+    });
+
+    it('should NOT instantiate CarouselThumbs if no thumbnail elements are passed', function () {
+        var fixture = document.getElementById('qunit-fixture');
+        var carouselThumbsInitializeStub = sinon.stub(CarouselThumbs.prototype, 'initialize');
+        var carouselThumbsDestroyStub = sinon.stub(CarouselThumbs.prototype, 'destroy');
+        var carouselView = new Carousel();
+        assert.equal(carouselThumbsInitializeStub.callCount, 0);
+        carouselView.destroy();
+        carouselThumbsInitializeStub.restore();
+        carouselThumbsDestroyStub.restore();
+    });
+
+    it('should pass thumbnail elements in CarouselThumbs initialize options', function () {
+        var fixture = document.getElementById('qunit-fixture');
+        var carouselThumbsInitializeSpy = sinon.spy(CarouselThumbs.prototype, 'initialize');
+        var carouselEl = document.createElement('div');
+        carouselEl.innerHTML =
+            '<div class="carousel-thumb"></div>' +
+            '<div class="carousel-thumb"></div>' +
+            '<div class="carousel-thumb"></div>';
+        var thumbs = carouselEl.getElementsByClassName('carousel-thumb');
+        var carouselView = new Carousel({thumbnails: thumbs});
+        assert.deepEqual(carouselThumbsInitializeSpy.args[0][0].thumbnails, thumbs, 'thumbnails were passed to CarouselThumbs initialize');
+        carouselView.destroy();
+        carouselThumbsInitializeSpy.restore();
+    });
+
+    it('should call CarouselThumbs destroy on destroy()', function () {
+        var fixture = document.getElementById('qunit-fixture');
+        var carouselThumbsDestroySpy = sinon.spy(CarouselThumbs.prototype, 'destroy');
+        var carouselEl = document.createElement('div');
+        carouselEl.innerHTML =
+            '<div class="carousel-thumb"></div>' +
+            '<div class="carousel-thumb"></div>' +
+            '<div class="carousel-thumb"></div>';
+        var thumbs = carouselEl.getElementsByClassName('carousel-thumb');
+        var carouselView = new Carousel({thumbnails: thumbs});
+        assert.equal(carouselThumbsDestroySpy.callCount, 0);
+        carouselView.destroy();
+        assert.equal(carouselThumbsDestroySpy.callCount, 1, 'CarouselThumbs destroy was called');
+        carouselThumbsDestroySpy.restore();
+    });
+
+    it('should pass first parameter of goTo() to CarouselPanels.goTo()', function () {
+        var fixture = document.getElementById('qunit-fixture');
+        var carouselEl = document.createElement('div');
+        carouselEl.innerHTML =
+            '<div class="carousel-panel"></div>' +
+            '<div class="carousel-panel"></div>' +
+            '<div class="carousel-panel"></div>';
+        var panels = carouselEl.getElementsByClassName('carousel-panel');
+        var carouselView = new Carousel({panels: panels});
+        var carouselPanelsGoToStub = sinon.stub(CarouselPanels.prototype, 'goTo');
+        var textIndexNum = 2;
+        carouselView.goTo(textIndexNum); // go to second index
+        assert.equal(carouselPanelsGoToStub.args[0][0], textIndexNum);
+        carouselPanelsGoToStub.restore();
+        carouselView.destroy();
+    });
+
+    it('should pass first parameter of goTo() to CarouselThumbs.goTo()', function () {
+        var fixture = document.getElementById('qunit-fixture');
+        var carouselEl = document.createElement('div');
+        carouselEl.innerHTML =
+            '<div class="carousel-thumb"></div>' +
+            '<div class="carousel-thumb"></div>' +
+            '<div class="carousel-thumb"></div>' +
+                // add panels so that we have an even ratio
+            '<div class="carousel-panel"></div>' +
+            '<div class="carousel-panel"></div>' +
+            '<div class="carousel-panel"></div>';
+        var thumbs = carouselEl.getElementsByClassName('carousel-thumb');
+        var panels = carouselEl.getElementsByClassName('carousel-panel');
+        var carouselView = new Carousel({thumbnails: thumbs, panels: panels});
+        var carouselThumbsGoToStub = sinon.stub(CarouselThumbs.prototype, 'goTo');
+        var testIndexNum = 1;
+        carouselView.goTo(testIndexNum);
+        assert.equal(carouselThumbsGoToStub.args[0][0], testIndexNum);
+        carouselThumbsGoToStub.restore();
         carouselView.destroy();
     });
 

@@ -1,5 +1,5 @@
 /** 
-* carousel-js - v1.3.1.
+* carousel-js - v1.4.0.
 * git://github.com/mkay581/carousel-js.git
 * Copyright 2015 Mark Kennedy. Licensed MIT.
 */
@@ -15003,6 +15003,17 @@ var Carousel = Module.extend({
      */
     initialize: function (options) {
 
+        options = options || {};
+
+        // if undefined or null is passed in options for panels or thumbnails,
+        // we need to sanitize it to an empty array to prevent a crash
+        if (!options.panels) {
+            options.panels = [];
+        }
+        if (!options.thumbnails) {
+            options.thumbnails = [];
+        }
+
         this.options = utils.extend({
             panels: [],
             assetLoadingClass: 'carousel-asset-loading',
@@ -15030,33 +15041,62 @@ var Carousel = Module.extend({
     },
 
     /**
-     * Sets up the carousel instance by adding event listeners to the thumbnails.
+     * Sets up the carousel instance and all controls.
      * @memberOf Carousel
      */
     setup: function () {
+        if (!this.subModules.panels) {
+            this.subModules.panels = this.setupPanels(this.options);
+        }
 
-        var options = this.options,
-            internalOptions = _.extend({}, this.options); // make clone of original options
+        if (this.options.thumbnails.length && !this.subModules.thumbnails) {
+            this.subModules.thumbnails = this.setupThumbs(this.options);
+        }
 
-        this.panels = new CarouselPanels(utils.extend({}, options, {
+        if ((this.options.leftArrow || this.options.rightArrow) && !this.subModules.arrows) {
+            this.subModules.arrows = this.setupArrows(this.options);
+        }
+
+        if (typeof this.options.initialIndex === 'number') {
+            this.goTo(this.options.initialIndex);
+        }
+    },
+
+    /**
+     * Sets up the carousel thumbs.
+     * @param {Object} options - The initialize options
+     * @return {CarouselThumbs} Returns thumbnail instance
+     */
+    setupThumbs: function (options) {
+         return new CarouselThumbs(utils.extend({}, options, {
+            onChange: this.onThumbnailChange.bind(this)
+        }));
+    },
+
+    /**
+     * Sets up the carousel panels.
+     * @param {Object} options - The initialize options
+     * @return {CarouselPanels} Returns panels instance
+     */
+    setupPanels: function (options) {
+        return new CarouselPanels(utils.extend({}, options, {
             onChange: this.onPanelChange.bind(this)
         }));
+    },
 
-        if (options.thumbnails.length) {
-            this.thumbnails = new CarouselThumbs(utils.extend({}, options, {
-                onChange: this.onThumbnailChange.bind(this)
-            }));
-        }
+    /**
+     * Sets up the carousel arrows.
+     * @param {Object} options - The initialize options
+     * @return {CarouselArrows} Returns arrows instance
+     */
+    setupArrows: function (options) {
+        var internalOptions;
+        // make clone of original options
+        internalOptions = _.extend({}, options);
 
-        if (options.leftArrow || options.rightArrow) {
-            internalOptions.onLeftArrowClick = this.onLeftArrowClick.bind(this);
-            internalOptions.onRightArrowClick = this.onRightArrowClick.bind(this);
-            this.subModules.arrows = new CarouselArrows(internalOptions);
-        }
-
-        if (typeof options.initialIndex === 'number') {
-            this.goTo(options.initialIndex);
-        }
+        internalOptions.onLeftArrowClick = this.onLeftArrowClick.bind(this);
+        internalOptions.onRightArrowClick = this.onRightArrowClick.bind(this);
+        return new CarouselArrows(internalOptions);
     },
 
     /**
@@ -15081,8 +15121,8 @@ var Carousel = Module.extend({
      * @memberOf Carousel
      */
     onPanelChange: function (index) {
-        if (this.thumbnails) {
-            this.thumbnails.goTo(index);
+        if (this.subModules.thumbnails) {
+            this.subModules.thumbnails.goTo(index);
         }
 
         if (this.subModules.arrows) {
@@ -15108,7 +15148,7 @@ var Carousel = Module.extend({
      * @param e
      */
     onRightArrowClick: function (e) {
-        this.goTo(this.panels.getCurrentIndex() + 1);
+        this.goTo(this.subModules.panels.getCurrentIndex() + 1);
         if (this.options.onRightArrowClick) {
             this.options.onRightArrowClick(e);
         }
@@ -15119,7 +15159,7 @@ var Carousel = Module.extend({
      * @param e
      */
     onLeftArrowClick: function (e) {
-        this.goTo(this.panels.getCurrentIndex() - 1);
+        this.goTo(this.subModules.panels.getCurrentIndex() - 1);
         if (this.options.onLeftArrowClick) {
             this.options.onLeftArrowClick(e);
         }
@@ -15143,13 +15183,13 @@ var Carousel = Module.extend({
             index = maxIndex;
         }
 
-        if (this.thumbnails) {
-            this.thumbnails.goTo(index);
+        if (this.subModules.thumbnails) {
+            this.subModules.thumbnails.goTo(index);
         }
         if (this.subModules.arrows) {
             this.subModules.arrows.update(index);
         }
-        return this.panels.goTo(index);
+        return this.subModules.panels.goTo(index);
     },
 
     /**
@@ -15158,7 +15198,7 @@ var Carousel = Module.extend({
      * @memberOf Carousel
      */
     getCurrentIndex: function () {
-        return this.panels.getCurrentIndex();
+        return this.subModules.panels.getCurrentIndex();
     },
 
     /**
@@ -15173,18 +15213,6 @@ var Carousel = Module.extend({
      */
     prev: function () {
         this.goTo(this.getCurrentIndex() - 1);
-    },
-
-    /**
-     * Destroys the carousel.
-     * @memberOf Carousel
-     */
-    destroy: function () {
-        this.panels.destroy();
-        if (this.thumbnails) {
-            this.thumbnails.destroy();
-        }
-        Module.prototype.destroy.call(this);
     }
 });
 
