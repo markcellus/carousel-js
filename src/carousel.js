@@ -62,33 +62,59 @@ var Carousel = Module.extend({
     },
 
     /**
-     * Sets up the carousel instance by adding event listeners to the thumbnails.
+     * Sets up the carousel instance and all controls.
      * @memberOf Carousel
      */
     setup: function () {
+        this.panels = this.setupPanels(this.options);
+        this.thumbnails = this.setupThumbs(this.options);
+        this.arrows = this.setupArrows(this.options);
+        if (typeof this.options.initialIndex === 'number') {
+            this.goTo(this.options.initialIndex);
+        }
+    },
 
-        var options = this.options,
-            internalOptions = _.extend({}, this.options); // make clone of original options
-
-        this.panels = new CarouselPanels(utils.extend({}, options, {
-            onChange: this.onPanelChange.bind(this)
-        }));
-
+    /**
+     * Sets up the carousel thumbs.
+     * @param {Object} options - The initialize options
+     * @return {CarouselThumbs|undefined} Returns thumbnail instance or undefined.
+     */
+    setupThumbs: function (options) {
+        var thumbs;
         if (options.thumbnails.length) {
-            this.thumbnails = new CarouselThumbs(utils.extend({}, options, {
+            thumbs = new CarouselThumbs(utils.extend({}, options, {
                 onChange: this.onThumbnailChange.bind(this)
             }));
         }
+        return thumbs;
+    },
 
+    /**
+     * Sets up the carousel panels.
+     * @param {Object} options - The initialize options
+     * @return {CarouselPanels} Returns panels instance.
+     */
+    setupPanels: function (options) {
+        var panels;
+        panels = new CarouselPanels(utils.extend({}, options, {
+            onChange: this.onPanelChange.bind(this)
+        }));
+        return panels;
+    },
+
+    /**
+     * Sets up the carousel arrows.
+     * @param {Object} options - The initialize options
+     * @return {CarouselArrows|undefined} Returns arrows instance or undefined.
+     */
+    setupArrows: function (options) {
+        var internalOptions = _.extend({}, this.options); // make clone of original options
         if (options.leftArrow || options.rightArrow) {
             internalOptions.onLeftArrowClick = this.onLeftArrowClick.bind(this);
             internalOptions.onRightArrowClick = this.onRightArrowClick.bind(this);
             this.subModules.arrows = new CarouselArrows(internalOptions);
         }
-
-        if (typeof options.initialIndex === 'number') {
-            this.goTo(options.initialIndex);
-        }
+        return this.subModules.arrows;
     },
 
     /**
