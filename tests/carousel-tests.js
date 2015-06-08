@@ -1,8 +1,8 @@
 var sinon = require('sinon');
 var Carousel = require('../src/carousel');
 var CarouselArrows = require('../src/carousel-arrows');
+var CarouselThumbs = require('../src/carousel-thumbs');
 var assert = require('assert');
-var Module = require('module.js');
 var TestUtils = require('test-utils');
 
 describe('Carousel', function () {
@@ -232,6 +232,47 @@ describe('Carousel', function () {
         assert.equal(leftArrowClickSpy.args[0][0], clickEvent, 'click callback was called and passed click event');
         carouselArrowsInitializeSpy.restore();
         carouselArrowsDestroySpy.restore();
+        carouselView.destroy();
+    });
+
+    it('should NOT instantiate CarouselThumbs if null/undefined is passed as thumbnail option', function () {
+        var fixture = document.getElementById('qunit-fixture');
+        var carouselThumbsInitializeStub = sinon.stub(CarouselThumbs.prototype, 'initialize');
+        var carouselThumbsDestroyStub = sinon.stub(CarouselThumbs.prototype, 'destroy');
+        var carouselView = new Carousel({
+            thumbnails: null
+        });
+        assert.equal(carouselThumbsInitializeStub.callCount, 0);
+        carouselThumbsInitializeStub.restore();
+        carouselThumbsDestroyStub.restore();
+        carouselView.destroy();
+    });
+
+    it('should NOT instantiate CarouselThumbs if no thumbnail elements are passed', function () {
+        var fixture = document.getElementById('qunit-fixture');
+        var carouselThumbsInitializeStub = sinon.stub(CarouselThumbs.prototype, 'initialize');
+        var carouselThumbsDestroyStub = sinon.stub(CarouselThumbs.prototype, 'destroy');
+        var carouselView = new Carousel();
+        assert.equal(carouselThumbsInitializeStub.callCount, 0);
+        carouselThumbsInitializeStub.restore();
+        carouselThumbsDestroyStub.restore();
+        carouselView.destroy();
+    });
+
+    it('should pass thumbnail elements in CarouselThumbs initialize options', function () {
+        var fixture = document.getElementById('qunit-fixture');
+        var carouselThumbsInitializeSpy = sinon.spy(CarouselThumbs.prototype, 'initialize');
+        var carouselThumbsDestroySpy = sinon.spy(CarouselThumbs.prototype, 'destroy');
+        var carouselEl = document.createElement('div');
+        carouselEl.innerHTML =
+            '<div class="carousel-thumb"></div>' +
+            '<div class="carousel-thumb"></div>' +
+            '<div class="carousel-thumb"></div>';
+        var thumbs = carouselEl.getElementsByClassName('carousel-thumb');
+        var carouselView = new Carousel({thumbnails: thumbs});
+        assert.deepEqual(carouselThumbsInitializeSpy.args[0][0].thumbnails, thumbs, 'thumbnails were passed to CarouselThumbs initialize');
+        carouselThumbsInitializeSpy.restore();
+        carouselThumbsDestroySpy.restore();
         carouselView.destroy();
     });
 

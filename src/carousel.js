@@ -35,6 +35,17 @@ var Carousel = Module.extend({
      */
     initialize: function (options) {
 
+        options = options || {};
+
+        // if undefined or null is passed in options for panels or thumbnails,
+        // we need to sanitize it to an empty array to prevent a crash
+        if (!options.panels) {
+            options.panels = [];
+        }
+        if (!options.thumbnails) {
+            options.thumbnails = [];
+        }
+
         this.options = utils.extend({
             panels: [],
             assetLoadingClass: 'carousel-asset-loading',
@@ -67,8 +78,15 @@ var Carousel = Module.extend({
      */
     setup: function () {
         this.panels = this.setupPanels(this.options);
-        this.thumbnails = this.setupThumbs(this.options);
-        this.arrows = this.setupArrows(this.options);
+
+        if (this.options.thumbnails.length) {
+            this.thumbnails = this.setupThumbs(this.options);
+        }
+
+        if (this.options.leftArrow || this.options.rightArrow) {
+            this.arrows = this.setupArrows(this.options);
+        }
+
         if (typeof this.options.initialIndex === 'number') {
             this.goTo(this.options.initialIndex);
         }
@@ -77,39 +95,42 @@ var Carousel = Module.extend({
     /**
      * Sets up the carousel thumbs.
      * @param {Object} options - The initialize options
-     * @return {CarouselThumbs|undefined} Returns thumbnail instance or undefined.
+     * @return {CarouselThumbs|Object} Returns thumbnail instance or empty object.
      */
     setupThumbs: function (options) {
-        var thumbs;
-        if (options.thumbnails.length) {
-            thumbs = new CarouselThumbs(utils.extend({}, options, {
+        if (!this.subModules.thumbs) {
+            this.subModules.thumbs = new CarouselThumbs(utils.extend({}, options, {
                 onChange: this.onThumbnailChange.bind(this)
             }));
         }
-        return thumbs;
+        return this.subModules.thumbs;
     },
 
     /**
      * Sets up the carousel panels.
      * @param {Object} options - The initialize options
-     * @return {CarouselPanels} Returns panels instance.
+     * @return {CarouselPanels|Object} Returns panels instance or empty object.
      */
     setupPanels: function (options) {
-        var panels;
-        panels = new CarouselPanels(utils.extend({}, options, {
-            onChange: this.onPanelChange.bind(this)
-        }));
-        return panels;
+        if (!this.subModules.panels) {
+            this.subModules.panels = new CarouselPanels(utils.extend({}, options, {
+                onChange: this.onPanelChange.bind(this)
+            }));
+        }
+        return this.subModules.panels;
     },
 
     /**
      * Sets up the carousel arrows.
      * @param {Object} options - The initialize options
-     * @return {CarouselArrows|undefined} Returns arrows instance or undefined.
+     * @return {CarouselArrows|Object} Returns arrows instance or empty object.
      */
     setupArrows: function (options) {
-        var internalOptions = _.extend({}, this.options); // make clone of original options
-        if (options.leftArrow || options.rightArrow) {
+        var internalOptions;
+        if (!this.subModules.arrows) {
+            // make clone of original options
+            internalOptions = _.extend({}, options);
+
             internalOptions.onLeftArrowClick = this.onLeftArrowClick.bind(this);
             internalOptions.onRightArrowClick = this.onRightArrowClick.bind(this);
             this.subModules.arrows = new CarouselArrows(internalOptions);
@@ -204,8 +225,8 @@ var Carousel = Module.extend({
         if (this.thumbnails) {
             this.thumbnails.goTo(index);
         }
-        if (this.subModules.arrows) {
-            this.subModules.arrows.update(index);
+        if (this.arrows) {
+            this.arrows.update(index);
         }
         return this.panels.goTo(index);
     },
@@ -231,18 +252,6 @@ var Carousel = Module.extend({
      */
     prev: function () {
         this.goTo(this.getCurrentIndex() - 1);
-    },
-
-    /**
-     * Destroys the carousel.
-     * @memberOf Carousel
-     */
-    destroy: function () {
-        this.panels.destroy();
-        if (this.thumbnails) {
-            this.thumbnails.destroy();
-        }
-        Module.prototype.destroy.call(this);
     }
 });
 
