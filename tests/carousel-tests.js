@@ -2,6 +2,7 @@ var sinon = require('sinon');
 var Carousel = require('../src/carousel');
 var CarouselArrows = require('../src/carousel-arrows');
 var CarouselThumbs = require('../src/carousel-thumbs');
+var CarouselPanels = require('../src/carousel-panels');
 var assert = require('assert');
 var TestUtils = require('test-utils');
 
@@ -288,6 +289,45 @@ describe('Carousel', function () {
         carouselView.destroy();
         assert.equal(carouselThumbsDestroySpy.callCount, 1, 'CarouselThumbs destroy was called');
         carouselThumbsDestroySpy.restore();
+    });
+
+    it('should pass first parameter of goTo() to CarouselPanels.goTo()', function () {
+        var fixture = document.getElementById('qunit-fixture');
+        var carouselEl = document.createElement('div');
+        carouselEl.innerHTML =
+            '<div class="carousel-panel"></div>' +
+            '<div class="carousel-panel"></div>' +
+            '<div class="carousel-panel"></div>';
+        var panels = carouselEl.getElementsByClassName('carousel-panel');
+        var carouselView = new Carousel({panels: panels});
+        var carouselPanelsGoToStub = sinon.stub(CarouselPanels.prototype, 'goTo');
+        var textIndexNum = 2;
+        carouselView.goTo(textIndexNum); // go to second index
+        assert.equal(carouselPanelsGoToStub.args[0][0], textIndexNum);
+        carouselPanelsGoToStub.restore();
+        carouselView.destroy();
+    });
+
+    it('should pass first parameter of goTo() to CarouselThumbs.goTo()', function () {
+        var fixture = document.getElementById('qunit-fixture');
+        var carouselEl = document.createElement('div');
+        carouselEl.innerHTML =
+            '<div class="carousel-thumb"></div>' +
+            '<div class="carousel-thumb"></div>' +
+            '<div class="carousel-thumb"></div>' +
+                // add panels so that we have an even ratio
+            '<div class="carousel-panel"></div>' +
+            '<div class="carousel-panel"></div>' +
+            '<div class="carousel-panel"></div>';
+        var thumbs = carouselEl.getElementsByClassName('carousel-thumb');
+        var panels = carouselEl.getElementsByClassName('carousel-panel');
+        var carouselView = new Carousel({thumbnails: thumbs, panels: panels});
+        var carouselThumbsGoToStub = sinon.stub(CarouselThumbs.prototype, 'goTo');
+        var testIndexNum = 1;
+        carouselView.goTo(testIndexNum);
+        assert.equal(carouselThumbsGoToStub.args[0][0], testIndexNum);
+        carouselThumbsGoToStub.restore();
+        carouselView.destroy();
     });
 
 });

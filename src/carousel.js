@@ -81,8 +81,8 @@ var Carousel = Module.extend({
             this.subModules.panels = this.setupPanels(this.options);
         }
 
-        if (this.options.thumbnails.length && !this.subModules.thumbs) {
-            this.subModules.thumbs = this.setupThumbs(this.options);
+        if (this.options.thumbnails.length && !this.subModules.thumbnails) {
+            this.subModules.thumbnails = this.setupThumbs(this.options);
         }
 
         if ((this.options.leftArrow || this.options.rightArrow) && !this.subModules.arrows) {
