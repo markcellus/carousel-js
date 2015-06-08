@@ -1,0 +1,53 @@
+<html>
+<head>
+    <style>
+        .carousel-panel {
+            width: 400px;
+            height: 200px;
+            display: none;
+        }
+
+        .carousel-panel-active {
+            display: block;
+        }
+
+        .image-loading {
+            /* add loader indicator styles here */
+        }
+
+    </style>
+</head>
+<body>
+<div class="carousel">
+    <div class="carousel-panel">
+        <img data-lazy-src="http://www.gstatic.com/webp/gallery/1.jpg" src="" />
+    </div>
+    <div class="carousel-panel">
+        <img data-lazy-src="http://www.gstatic.com/webp/gallery/2.jpg" src="" />
+    </div>
+    <div class="carousel-panel">
+        <img data-lazy-src="http://www.gstatic.com/webp/gallery/3.jpg" src="" />
+    </div>
+
+</div>
+<script src="//cdnjs.cloudflare.com/ajax/libs/require.js/2.1.18/require.min.js"></script>
+
+<script>
+    require(['path/to/carousel.js'], function(Carousel) {
+
+        var carousel = new Carousel({
+            panels: document.getElementsByClassName('carousel-panel'),
+            panelActiveClass: 'carousel-panel-active',
+            lazyLoadAttr: 'data-lazy-src',
+            assetLoadingClass: 'image-loading'
+        });
+
+        // goes to first panel and lazy loads the image inside of it
+        carousel.goTo(0);
+        // FYI: it will also the "image-loading" css class to the image element while its loading
+        // so you can add a loading style, loading indicator, etc
+
+    });
+</script>
+</body>
+</html>

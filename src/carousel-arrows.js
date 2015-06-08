@@ -37,7 +37,6 @@ var CarouselArrows = Module.extend({
             rightArrow: null,
             panels: [],
             arrowDisabledClass: 'carousel-arrow-disabled',
-            panelActiveClass: 'carousel-panel-active',
             onLeftArrowClick: null,
             onRightArrowClick: null,
             initialIndex: 0
