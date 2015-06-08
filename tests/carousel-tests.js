@@ -155,9 +155,9 @@ describe('Carousel', function () {
             panels: panels
         });
         assert.equal(carouselArrowsInitializeStub.callCount, 0);
+        carouselView.destroy();
         carouselArrowsInitializeStub.restore();
         carouselArrowsDestroyStub.restore();
-        carouselView.destroy();
     });
 
     it('should pass arrows and panels in initialize options to CarouselArrows', function () {
@@ -180,9 +180,9 @@ describe('Carousel', function () {
         assert.deepEqual(carouselArrowsInitializeSpy.args[0][0].panels, panels, 'panels were passed to carousel arrows');
         assert.deepEqual(carouselArrowsInitializeSpy.args[0][0].leftArrow, leftArrow, 'left arrow is passed to carousel arrows');
         assert.deepEqual(carouselArrowsInitializeSpy.args[0][0].rightArrow, rightArrow, 'right arrow was passed to carousel arrows');
+        carouselView.destroy();
         carouselArrowsInitializeSpy.restore();
         carouselArrowsDestroySpy.restore();
-        carouselView.destroy();
     });
 
     it('should call destroy on CarouselArrows when destroy() is called', function () {
@@ -230,9 +230,9 @@ describe('Carousel', function () {
         var clickEvent = TestUtils.createEvent('click');
         leftArrow.dispatchEvent(clickEvent);
         assert.equal(leftArrowClickSpy.args[0][0], clickEvent, 'click callback was called and passed click event');
+        carouselView.destroy();
         carouselArrowsInitializeSpy.restore();
         carouselArrowsDestroySpy.restore();
-        carouselView.destroy();
     });
 
     it('should NOT instantiate CarouselThumbs if null/undefined is passed as thumbnail option', function () {
@@ -243,9 +243,9 @@ describe('Carousel', function () {
             thumbnails: null
         });
         assert.equal(carouselThumbsInitializeStub.callCount, 0);
+        carouselView.destroy();
         carouselThumbsInitializeStub.restore();
         carouselThumbsDestroyStub.restore();
-        carouselView.destroy();
     });
 
     it('should NOT instantiate CarouselThumbs if no thumbnail elements are passed', function () {
@@ -254,15 +254,14 @@ describe('Carousel', function () {
         var carouselThumbsDestroyStub = sinon.stub(CarouselThumbs.prototype, 'destroy');
         var carouselView = new Carousel();
         assert.equal(carouselThumbsInitializeStub.callCount, 0);
+        carouselView.destroy();
         carouselThumbsInitializeStub.restore();
         carouselThumbsDestroyStub.restore();
-        carouselView.destroy();
     });
 
     it('should pass thumbnail elements in CarouselThumbs initialize options', function () {
         var fixture = document.getElementById('qunit-fixture');
         var carouselThumbsInitializeSpy = sinon.spy(CarouselThumbs.prototype, 'initialize');
-        var carouselThumbsDestroySpy = sinon.spy(CarouselThumbs.prototype, 'destroy');
         var carouselEl = document.createElement('div');
         carouselEl.innerHTML =
             '<div class="carousel-thumb"></div>' +
@@ -271,9 +270,24 @@ describe('Carousel', function () {
         var thumbs = carouselEl.getElementsByClassName('carousel-thumb');
         var carouselView = new Carousel({thumbnails: thumbs});
         assert.deepEqual(carouselThumbsInitializeSpy.args[0][0].thumbnails, thumbs, 'thumbnails were passed to CarouselThumbs initialize');
-        carouselThumbsInitializeSpy.restore();
-        carouselThumbsDestroySpy.restore();
         carouselView.destroy();
+        carouselThumbsInitializeSpy.restore();
+    });
+
+    it('should call CarouselThumbs destroy on destroy()', function () {
+        var fixture = document.getElementById('qunit-fixture');
+        var carouselThumbsDestroySpy = sinon.spy(CarouselThumbs.prototype, 'destroy');
+        var carouselEl = document.createElement('div');
+        carouselEl.innerHTML =
+            '<div class="carousel-thumb"></div>' +
+            '<div class="carousel-thumb"></div>' +
+            '<div class="carousel-thumb"></div>';
+        var thumbs = carouselEl.getElementsByClassName('carousel-thumb');
+        var carouselView = new Carousel({thumbnails: thumbs});
+        assert.equal(carouselThumbsDestroySpy.callCount, 0);
+        carouselView.destroy();
+        assert.equal(carouselThumbsDestroySpy.callCount, 1, 'CarouselThumbs destroy was called');
+        carouselThumbsDestroySpy.restore();
     });
 
 });
