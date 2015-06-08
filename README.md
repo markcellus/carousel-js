@@ -5,6 +5,18 @@
 A lightweight and flexible Carousel class that allows you to build fully functional, advanced Carousels with minimal javascript and markup.
 This library is built using native vanilla javascript. Which means super fast performance. Supports IE10+, all major browsers and even mobile.
 
+## Inspiration
+
+This is a module that I built originally to solve many of the headaches and complexities around building flexible
+and scalable carousels.
+
+This library has been used and adopted on many projects, including:
+
+* [fallout4.com](http://www.fallout4.com)
+* [mobile USPS.com](http://m.usps.com)
+* [barclaycardus.com](http://barclaycardus.com)
+
+
 ## Usage
 
 ### Carousel
