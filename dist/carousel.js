@@ -1,5 +1,5 @@
 /** 
-* carousel-js - v1.4.0.
+* carousel-js - v1.4.1.
 * git://github.com/mkay581/carousel-js.git
 * Copyright 2015 Mark Kennedy. Licensed MIT.
 */
@@ -14482,7 +14482,6 @@ var CarouselArrows = Module.extend({
             rightArrow: null,
             panels: [],
             arrowDisabledClass: 'carousel-arrow-disabled',
-            panelActiveClass: 'carousel-panel-active',
             onLeftArrowClick: null,
             onRightArrowClick: null,
             initialIndex: 0
