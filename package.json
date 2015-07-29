@@ -1,6 +1,6 @@
 {
   "name": "carousel-js",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "A carousel class",
   "repository": {
     "type": "git",
@@ -31,7 +31,7 @@
     "underscore": "^1.8.3"
   },
   "devDependencies": {
-    "build-tools": "^1.5.2",
+    "build-tools": "^1.6.0",
     "grunt": "^0.4.5",
     "grunt-cli": "^0.1.13",
     "sinon": "^1.14.1"
