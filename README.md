@@ -19,6 +19,9 @@ This library has been used and adopted on many projects, including:
 
 ## Usage
 
+In order to use carousel, you can use one of the [pre-built files](/dist) if you want to quickly get started. Or, alternatively
+ you can use the [source files](/src) directly if you are running your own build processes.
+
 ### Carousel
 
 You can create a carousel based off of a set of predetermined markup. Assuming you have the appropriate elements
