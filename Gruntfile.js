@@ -11,15 +11,12 @@ module.exports = function(grunt) {
                 },
                 browserifyOptions: {
                     standalone: 'Carousel'
-                }
-            },
-            min: {
-                files: {
+                },
+                minifyFiles: {
                     'dist/carousel-min.js': ['dist/carousel.js']
-                }
-            },
-            banner: {
-                files: ['dist/*']
+                },
+                bannerFiles: ['dist/*']
+
             },
             tests: {
                 mocha: {
