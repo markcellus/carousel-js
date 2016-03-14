@@ -37,6 +37,7 @@
     "sinon": "^1.17.3"
   },
   "scripts": {
-    "test": "grunt bt:test"
+    "test": "grunt bt:test",
+    "start": "grunt bt:server:local"
   }
 }
