@@ -4,20 +4,45 @@
         .carousel-panel {
             width: 400px;
             height: 200px;
-            display: none;
+            opacity: 0;
+            visibility: hidden;
+            position: absolute;
+        }
+
+        .carousel-panel img {
+            display: block;
+            width: 100%;
+            height: auto;
         }
 
         .carousel-panel-active {
-            display: block;
+            opacity: 1;
+            visibility: visible;
+            transition: opacity .2s ease-out;
+        }
+
+        .carousel-thumb {
+            width: 20px;
+            height: 20px;
+            background-color: darkblue;
+            display: inline-block;
+            cursor: pointer;
         }
 
         .image-loading {
-            /* add loader indicator styles here */
+            /* add image loader indicator styles here */
         }
 
     </style>
 </head>
 <body>
+<p>Click on one of the thumbnails below and notice how the images only load when <br />
+    you click on a thumbnail image. The first photo loads immediately fyi.</p>
+<div class="carousel-thumbs">
+    <div class="carousel-thumb"></div>
+    <div class="carousel-thumb"></div>
+    <div class="carousel-thumb"></div>
+</div>
 <div class="carousel">
     <div class="carousel-panel">
         <img data-lazy-src="http://www.gstatic.com/webp/gallery/1.jpg" src="" />
@@ -30,24 +55,21 @@
     </div>
 
 </div>
-<script src="//cdnjs.cloudflare.com/ajax/libs/require.js/2.1.18/require.min.js"></script>
-
+<script src="../dist/carousel.js"></script>
 <script>
-    require(['path/to/carousel.js'], function(Carousel) {
-
-        var carousel = new Carousel({
-            panels: document.getElementsByClassName('carousel-panel'),
-            panelActiveClass: 'carousel-panel-active',
-            lazyLoadAttr: 'data-lazy-src',
-            assetLoadingClass: 'image-loading'
-        });
-
-        // goes to first panel and lazy loads the image inside of it
-        carousel.goTo(0);
-        // FYI: it will also the "image-loading" css class to the image element while its loading
-        // so you can add a loading style, loading indicator, etc
-
+    var carousel = new Carousel({
+        panels: document.getElementsByClassName('carousel-panel'),
+        panelActiveClass: 'carousel-panel-active',
+        lazyLoadAttr: 'data-lazy-src',
+        assetLoadingClass: 'image-loading',
+        thumbnails: document.getElementsByClassName('carousel-thumb')
     });
+
+    // goes to first panel and lazy loads the image inside of it
+    carousel.goTo(0);
+    // FYI: it will also add the "image-loading" css class to the image element while its loading
+    // so you can add a loading style, loading indicator, etc
+
 </script>
 </body>
 </html>
