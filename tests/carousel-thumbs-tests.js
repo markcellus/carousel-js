@@ -51,5 +51,57 @@ describe('Carousel Thumbs', function () {
         goToSpy.restore();
     });
 
+    it('should NOT add active classes when clicking on thumbnails after destruction', function () {
+        var fixture = document.getElementById('qunit-fixture');
+        var thumbsEl = document.createElement('div');
+        thumbsEl.innerHTML =
+            '<button>Thumb 1</button>' +
+            '<button>Thumb 2</button>' +
+            '<button>Thumb 3</button>';
+        var thumbActiveClass = 'thumb-active';
+        var thumbEls = thumbsEl.getElementsByTagName('button');
+        var thumbsView = new CarouselThumbs({
+            thumbnails: thumbEls,
+            thumbnailActiveClass: thumbActiveClass
+        });
+        // destroy immediately
+        thumbsView.destroy();
+        // click second thumbnail
+        thumbEls[1].dispatchEvent(TestUtils.createEvent('click'));
+        assert.ok(!thumbEls[1].classList.contains(thumbActiveClass), 'second thumbnail does not have active class when clicked');
+        // click first thumbnail
+        thumbEls[0].dispatchEvent(TestUtils.createEvent('click'));
+        assert.ok(!thumbEls[0].classList.contains(thumbActiveClass), 'first thumbnail does not have active class when clicked');
+        // click third thumbnail
+        thumbEls[2].dispatchEvent(TestUtils.createEvent('click'));
+        assert.ok(!thumbEls[2].classList.contains(thumbActiveClass), 'third thumbnail does not have active class when clicked');
+    });
+
+    it('should NOT call goTo method when clicking on thumbnails after destruction', function () {
+        var fixture = document.getElementById('qunit-fixture');
+        var thumbsEl = document.createElement('div');
+        thumbsEl.innerHTML =
+            '<button>Thumb 1</button>' +
+            '<button>Thumb 2</button>' +
+            '<button>Thumb 3</button>';
+        var goToSpy = sinon.spy(CarouselThumbs.prototype, 'goTo');
+        var thumbActiveClass = 'thumb-active';
+        var thumbEls = thumbsEl.getElementsByTagName('button');
+        var thumbsView = new CarouselThumbs({
+            thumbnails: thumbEls,
+            thumbnailActiveClass: thumbActiveClass
+        });
+        // destroy immediately
+        thumbsView.destroy();
+        // click second thumbnail
+        thumbEls[1].dispatchEvent(TestUtils.createEvent('click'));
+        // click first thumbnail
+        thumbEls[0].dispatchEvent(TestUtils.createEvent('click'));
+        // click third thumbnail
+        thumbEls[2].dispatchEvent(TestUtils.createEvent('click'));
+        assert.equal(goToSpy.callCount, 0);
+        goToSpy.restore();
+    });
+
 
 });

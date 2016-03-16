@@ -1,11 +1,9 @@
 'use strict';
-var CarouselPanels = require('./carousel-panels');
-var CarouselThumbs = require('./carousel-thumbs');
-var CarouselArrows = require('./carousel-arrows');
-var ElementKit = require('element-kit');
-var utils = ElementKit.utils;
-var Module = require('module.js');
-var _ = require('underscore');
+import CarouselThumbs from './carousel-thumbs';
+import CarouselPanels from './carousel-panels';
+import CarouselArrows from './carousel-arrows';
+import _ from 'lodash';
+import Module from 'module-js';
 /**
  * A callback function that fires after a new active panel is set
  * @callback Carousel~onPanelChange
@@ -27,13 +25,13 @@ var _ = require('underscore');
  * @param {Number} [options.initialIndex] - The index of the panel to go to upon instantiation (if not declared, goTo() must be called manually).
  */
 
-var Carousel = Module.extend({
+class Carousel extends Module {
 
     /**
      * Sets up stuff.
      * @param options
      */
-    initialize: function (options) {
+    constructor (options) {
 
         options = options || {};
 
@@ -46,7 +44,7 @@ var Carousel = Module.extend({
             options.thumbnails = [];
         }
 
-        this.options = utils.extend({
+        options = _.extend({
             panels: [],
             assetLoadingClass: 'carousel-asset-loading',
             autoLoadAssets: true,
@@ -65,18 +63,21 @@ var Carousel = Module.extend({
             onRightArrowClick: null
         }, options);
 
+        super(options);
+
+        this.options = options;
         this._checkForInitErrors();
-
-        Module.prototype.initialize.call(this, this.options);
-
         this.setup();
-    },
+    }
 
     /**
      * Sets up the carousel instance and all controls.
      * @memberOf Carousel
      */
-    setup: function () {
+    setup () {
+
+        this.subModules = this.subModules || {};
+
         if (!this.subModules.panels) {
             this.subModules.panels = this.setupPanels(this.options);
         }
@@ -92,36 +93,38 @@ var Carousel = Module.extend({
         if (typeof this.options.initialIndex === 'number') {
             this.goTo(this.options.initialIndex);
         }
-    },
+    }
 
     /**
      * Sets up the carousel thumbs.
      * @param {Object} options - The initialize options
      * @return {CarouselThumbs} Returns thumbnail instance
      */
-    setupThumbs: function (options) {
-         return new CarouselThumbs(utils.extend({}, options, {
+    setupThumbs (options) {
+         return new CarouselThumbs(_.extend({}, options, {
             onChange: this.onThumbnailChange.bind(this)
         }));
-    },
+    }
 
     /**
      * Sets up the carousel panels.
      * @param {Object} options - The initialize options
      * @return {CarouselPanels} Returns panels instance
      */
-    setupPanels: function (options) {
-        return new CarouselPanels(utils.extend({}, options, {
-            onChange: this.onPanelChange.bind(this)
-        }));
-    },
+    setupPanels (options) {
+        if (options.panels.length) {
+            return new CarouselPanels(_.extend({}, options, {
+                onChange: this.onPanelChange.bind(this)
+            }));
+        }
+    }
 
     /**
      * Sets up the carousel arrows.
      * @param {Object} options - The initialize options
      * @return {CarouselArrows} Returns arrows instance
      */
-    setupArrows: function (options) {
+    setupArrows (options) {
         var internalOptions;
         // make clone of original options
         internalOptions = _.extend({}, options);
@@ -129,14 +132,14 @@ var Carousel = Module.extend({
         internalOptions.onLeftArrowClick = this.onLeftArrowClick.bind(this);
         internalOptions.onRightArrowClick = this.onRightArrowClick.bind(this);
         return new CarouselArrows(internalOptions);
-    },
+    }
 
     /**
      * Checks for errors upon initialize.
      * @private
      * @memberOf Carousel
      */
-    _checkForInitErrors: function () {
+    _checkForInitErrors () {
         var options = this.options,
             panelCount = options.panels.length,
             thumbnailCount = options.thumbnails.length;
@@ -145,14 +148,14 @@ var Carousel = Module.extend({
             'panels: ' + panelCount + '\n' +
             'thumbnails: ' + thumbnailCount + '\n');
         }
-    },
+    }
 
     /**
      * When a panel index changes.
      * @param {Number} index - The new index
      * @memberOf Carousel
      */
-    onPanelChange: function (index) {
+    onPanelChange (index) {
         if (this.subModules.thumbnails) {
             this.subModules.thumbnails.goTo(index);
         }
@@ -164,45 +167,45 @@ var Carousel = Module.extend({
         if (this.options.onPanelChange) {
             this.options.onPanelChange(index)
         }
-    },
+    }
 
     /**
      * When the thumbnail index changes.
      * @param {Number} index - The new index
      * @memberOf Carousel
      */
-    onThumbnailChange: function (index) {
+    onThumbnailChange (index) {
         this.goTo(index);
-    },
+    }
 
     /**
      * When the right arrow of the carousel is clicked.
      * @param e
      */
-    onRightArrowClick: function (e) {
+    onRightArrowClick (e) {
         this.goTo(this.subModules.panels.getCurrentIndex() + 1);
         if (this.options.onRightArrowClick) {
             this.options.onRightArrowClick(e);
         }
-    },
+    }
 
     /**
      * When the left arrow of the carousel is clicked.
      * @param e
      */
-    onLeftArrowClick: function (e) {
+    onLeftArrowClick (e) {
         this.goTo(this.subModules.panels.getCurrentIndex() - 1);
         if (this.options.onLeftArrowClick) {
             this.options.onLeftArrowClick(e);
         }
-    },
+    }
 
     /**
      * Transition to a new panel and thumbnail.
      * @param {Number} index - The index number to go to
      * @memberOf Carousel
      */
-    goTo: function (index) {
+    goTo (index) {
         var options = this.options,
             maxIndex = options.panels.length - 1,
             minIndex = 0;
@@ -221,31 +224,34 @@ var Carousel = Module.extend({
         if (this.subModules.arrows) {
             this.subModules.arrows.update(index);
         }
-        return this.subModules.panels.goTo(index);
-    },
+
+        if (this.subModules.panels) {
+            return this.subModules.panels.goTo(index);
+        }
+    }
 
     /**
      * Gets the current index that is showing.
      * @returns {Number} Returns the index
      * @memberOf Carousel
      */
-    getCurrentIndex: function () {
+    getCurrentIndex () {
         return this.subModules.panels.getCurrentIndex();
-    },
+    }
 
     /**
      * Moves carousel to next panel.
      */
-    next: function () {
+    next () {
         this.goTo(this.getCurrentIndex() + 1);
-    },
+    }
 
     /**
      * Moves to previous carousel panel.
      */
-    prev: function () {
+    prev () {
         this.goTo(this.getCurrentIndex() - 1);
     }
-});
+}
 
 module.exports = Carousel;

@@ -1,6 +1,6 @@
 {
   "name": "carousel-js",
-  "version": "1.5.0",
+  "version": "2.0.0",
   "homepage": "https://github.com/mkay581/carousel-js",
   "authors": [
     "Mark Kennedy <mkay581@gmail.com>"
@@ -28,11 +28,9 @@
   ],
   "main": "src/carousel.js",
   "dependencies": {
-    "element-kit": "^1.0.5",
     "jquery": "^2.2.1",
-    "module.js": "^2.2.4",
-    "promise": "^7.1.1",
-    "resource-manager-js": "^1.2.1",
-    "underscore": "^1.8.3"
+    "lodash": "^4.6.1",
+    "module-js": "^3.0.1",
+    "promise": "^7.1.1"
   }
 }

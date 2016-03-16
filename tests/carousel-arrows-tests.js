@@ -104,9 +104,23 @@ describe('Carousel Arrows', function () {
             rightArrow: rightArrow,
             onRightArrowClick: rightArrowClickSpy
         });
+        assert.equal(rightArrowClickSpy.callCount, 0);
         rightArrow.dispatchEvent(TestUtils.createEvent('click'));
         assert.equal(rightArrowClickSpy.callCount, 1);
         arrowsView.destroy();
+    });
+
+    it('should NOT trigger onRightArrowClick callback when right arrow is clicked after destruction', function () {
+        var fixture = document.getElementById('qunit-fixture');
+        var rightArrow = document.createElement('div');
+        var rightArrowClickSpy = sinon.spy();
+        var arrowsView = new CarouselArrows({
+            rightArrow: rightArrow,
+            onRightArrowClick: rightArrowClickSpy
+        });
+        arrowsView.destroy();
+        rightArrow.dispatchEvent(TestUtils.createEvent('click'));
+        assert.equal(rightArrowClickSpy.callCount, 0);
     });
 
     it('should NOT call onRightArrowClick callback when a disabled right arrow is clicked', function () {
@@ -123,7 +137,7 @@ describe('Carousel Arrows', function () {
         arrowsView.destroy();
     });
 
-    it('should call onLeftArrowClick callback when right arrow is clicked', function () {
+    it('should call onLeftArrowClick callback when left arrow is clicked', function () {
         var fixture = document.getElementById('qunit-fixture');
         var leftArrow = document.createElement('div');
         var leftArrowClickSpy = sinon.spy();
@@ -131,9 +145,23 @@ describe('Carousel Arrows', function () {
             leftArrow: leftArrow,
             onLeftArrowClick: leftArrowClickSpy
         });
+        assert.equal(leftArrowClickSpy.callCount, 0);
         leftArrow.dispatchEvent(TestUtils.createEvent('click'));
         assert.equal(leftArrowClickSpy.callCount, 1);
         arrowsView.destroy();
+    });
+
+    it('should NOT trigger onLeftArrowClick callback when left arrow is clicked after destruction', function () {
+        var fixture = document.getElementById('qunit-fixture');
+        var leftArrow = document.createElement('div');
+        var leftArrowClickSpy = sinon.spy();
+        var arrowsView = new CarouselArrows({
+            leftArrow: leftArrow,
+            onLeftArrowClick: leftArrowClickSpy
+        });
+        arrowsView.destroy();
+        leftArrow.dispatchEvent(TestUtils.createEvent('click'));
+        assert.equal(leftArrowClickSpy.callCount, 0);
     });
 
     it('should add disabled css class on left arrow when update() is called on first panel index', function () {

@@ -1,8 +1,6 @@
 'use strict';
-var _ = require('underscore');
-var ElementKit = require('element-kit');
-var Module = require('module.js');
-var Promise = require('promise');
+import _ from 'lodash';
+import Module from 'module-js';
 
 /**
  * A callback function that fires after the left arrow is clicked
@@ -18,7 +16,7 @@ var Promise = require('promise');
  * Adds functionality for carousel's left and right arrows.
  * @constructor CarouselArrows
  */
-var CarouselArrows = Module.extend({
+class CarouselArrows extends Module {
 
     /**
      * When the carousel is instantiated.
@@ -30,9 +28,9 @@ var CarouselArrows = Module.extend({
      * @param {CarouselArrows~onLeftArrowClick} [options.onLeftArrowClick] - When the left arrow is clicked
      * @param {CarouselArrows~onRightArrowClick} [options.onRightArrowClick] - When the right arrow is clicked
      */
-    initialize: function (options) {
+    constructor (options) {
 
-        this.options = _.extend({
+        options = _.extend({
             leftArrow: null,
             rightArrow: null,
             panels: [],
@@ -42,42 +40,34 @@ var CarouselArrows = Module.extend({
             initialIndex: 0
         }, options);
 
-        this._checkForInitErrors();
+        if (!options.leftArrow && !options.rightArrow) {
+            console.error('Carousel Arrows Error: no left and right arrows were passed into constructor');
+        }
 
-        Module.prototype.initialize.call(this, this.options);
+        super(options);
+        this.options = options;
 
         this.arrows = [];
-
 
         // setup listeners
         if (options.leftArrow) {
             this.arrows.push(options.leftArrow);
-            options.leftArrow.kit.addEventListener('click', 'onLeftArrowClick', this);
+            this._leftArrowEventListener = e => this.onLeftArrowClick(e);
+            options.leftArrow.addEventListener('click', this._leftArrowEventListener);
         }
 
         if (options.rightArrow) {
             this.arrows.push(options.rightArrow);
-            options.rightArrow.kit.addEventListener('click', 'onRightArrowClick', this);
+            this._rightArrowEventListener = e => this.onRightArrowClick(e);
+            options.rightArrow.addEventListener('click', this._rightArrowEventListener);
         }
-    },
-
-    /**
-     * Checks for errors upon initialize.
-     * @memberOf CarouselArrows
-     * @private
-     */
-    _checkForInitErrors: function () {
-        var options = this.options;
-        if (!options.leftArrow && !options.rightArrow) {
-            console.error('Carousel Arrows Error: no left and right arrows were passed into constructor');
-        }
-    },
+    }
 
     /**
      * Updates the arrow based on the supplied panel index.
      * @param {Number} panelIndex - The new panel index
      */
-    update: function (panelIndex) {
+    update (panelIndex) {
         var currentItemNum = panelIndex + 1,
             maxItems = this.options.panels.length,
             minItems = 1;
@@ -98,96 +88,96 @@ var CarouselArrows = Module.extend({
             this.enableRightArrow();
         }
 
-    },
+    }
 
     /**
      * Disables all arrows
      */
-    disable: function () {
+    disable () {
         this.disableLeftArrow();
         this.disableRightArrow();
-    },
+    }
 
     /**
      * Disables left arrow.
      */
-    disableLeftArrow: function () {
+    disableLeftArrow () {
         if (this.options.leftArrow) {
             this.options.leftArrow.classList.add(this.options.arrowDisabledClass);
         }
-    },
+    }
 
     /**
      * Disables right arrow.
      */
-    disableRightArrow: function () {
+    disableRightArrow () {
         if (this.options.rightArrow) {
             this.options.rightArrow.classList.add(this.options.arrowDisabledClass);
         }
-    },
+    }
 
     /**
      * Re-enables all arrows.
      */
-    enable: function () {
+    enable () {
         this.enableLeftArrow();
         this.enableRightArrow();
-    },
+    }
 
     /**
      * Re-enables left arrow.
      */
-    enableLeftArrow: function () {
+    enableLeftArrow () {
         if (this.options.leftArrow) {
             this.options.leftArrow.classList.remove(this.options.arrowDisabledClass);
         }
-    },
+    }
 
     /**
      * Re-enables right arrow.
      */
-    enableRightArrow: function () {
+    enableRightArrow () {
         if (this.options.rightArrow) {
             this.options.rightArrow.classList.remove(this.options.arrowDisabledClass);
         }
-    },
+    }
 
     /**
      * When the left arrow is clicked.
      * @param {Event} e
      */
-    onLeftArrowClick: function (e) {
+    onLeftArrowClick (e) {
         var isDisabled = this.options.leftArrow.classList.contains(this.options.arrowDisabledClass);
         if (this.options.onLeftArrowClick && !isDisabled) {
             this.options.onLeftArrowClick(e);
         }
-    },
+    }
 
     /**
      * When the right arrow is clicked.
      * @param {Event} e
      */
-    onRightArrowClick: function (e) {
+    onRightArrowClick (e) {
         var isDisabled = this.options.rightArrow.classList.contains(this.options.arrowDisabledClass);
         if (this.options.onRightArrowClick && !isDisabled) {
             this.options.onRightArrowClick(e);
         }
-    },
+    }
 
     /**
      * Final cleanup of instance.
      * @memberOf CarouselArrows
      */
-    destroy: function () {
+    destroy () {
         if (this.options.leftArrow) {
-            this.options.leftArrow.kit.removeEventListener('click', 'onLeftArrowClick', this);
+            this.options.leftArrow.removeEventListener('click', this._leftArrowEventListener);
         }
 
         if (this.options.rightArrow) {
-            this.options.rightArrow.kit.removeEventListener('click', 'onRightArrowClick', this);
+            this.options.rightArrow.removeEventListener('click', this._rightArrowEventListener);
         }
-        Module.prototype.destroy.call(this);
+        super.destroy();
     }
-});
+}
 
 module.exports = CarouselArrows;
