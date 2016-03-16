@@ -1,10 +1,8 @@
 'use strict';
-var CarouselPanels = require('./carousel-panels');
-var CarouselThumbs = require('./carousel-thumbs');
-var CarouselArrows = require('./carousel-arrows');
-var ElementKit = require('element-kit');
-var utils = ElementKit.utils;
-var _ = require('underscore');
+import CarouselThumbs from './carousel-thumbs';
+import CarouselPanels from './carousel-panels';
+import CarouselArrows from './carousel-arrows';
+import _ from 'lodash';
 import Module from 'module-js';
 /**
  * A callback function that fires after a new active panel is set
@@ -46,7 +44,7 @@ class Carousel extends Module {
             options.thumbnails = [];
         }
 
-        options = utils.extend({
+        options = _.extend({
             panels: [],
             assetLoadingClass: 'carousel-asset-loading',
             autoLoadAssets: true,
@@ -77,6 +75,9 @@ class Carousel extends Module {
      * @memberOf Carousel
      */
     setup () {
+
+        this.subModules = this.subModules || {};
+
         if (!this.subModules.panels) {
             this.subModules.panels = this.setupPanels(this.options);
         }
@@ -100,7 +101,7 @@ class Carousel extends Module {
      * @return {CarouselThumbs} Returns thumbnail instance
      */
     setupThumbs (options) {
-         return new CarouselThumbs(utils.extend({}, options, {
+         return new CarouselThumbs(_.extend({}, options, {
             onChange: this.onThumbnailChange.bind(this)
         }));
     }
@@ -111,9 +112,11 @@ class Carousel extends Module {
      * @return {CarouselPanels} Returns panels instance
      */
     setupPanels (options) {
-        return new CarouselPanels(utils.extend({}, options, {
-            onChange: this.onPanelChange.bind(this)
-        }));
+        if (options.panels.length) {
+            return new CarouselPanels(_.extend({}, options, {
+                onChange: this.onPanelChange.bind(this)
+            }));
+        }
     }
 
     /**
@@ -221,7 +224,10 @@ class Carousel extends Module {
         if (this.subModules.arrows) {
             this.subModules.arrows.update(index);
         }
-        return this.subModules.panels.goTo(index);
+
+        if (this.subModules.panels) {
+            return this.subModules.panels.goTo(index);
+        }
     }
 
     /**
