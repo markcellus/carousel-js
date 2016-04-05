@@ -1,5 +1,5 @@
 /** 
-* carousel-js - v2.1.4.
+* carousel-js - v2.1.6.
 * git://github.com/mkay581/carousel-js.git
 * Copyright 2016 Mark Kennedy. Licensed MIT.
 */

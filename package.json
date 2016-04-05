@@ -1,6 +1,6 @@
 {
   "name": "carousel-js",
-  "version": "2.1.5",
+  "version": "2.1.6",
   "description": "A carousel class",
   "repository": {
     "type": "git",
@@ -28,7 +28,7 @@
     "promise": "^7.1.1"
   },
   "devDependencies": {
-    "build-tools": "^3.0.1",
+    "build-tools": "^3.0.2",
     "sinon": "^1.17.3"
   },
   "scripts": {
