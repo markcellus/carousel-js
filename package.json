@@ -23,7 +23,6 @@
   ],
   "main": "src/carousel.js",
   "dependencies": {
-    "jquery": "^2.2.1",
     "lodash": "^4.6.1",
     "module-js": "^3.0.1",
     "promise": "^7.1.1"
