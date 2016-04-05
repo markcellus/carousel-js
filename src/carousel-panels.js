@@ -1,8 +1,7 @@
 'use strict';
-var _ = require('underscore');
-var ElementKit = require('element-kit');
-var Module = require('module.js');
-var Promise = require('promise');
+import _ from 'lodash';
+import Module from 'module-js';
+import Promise from 'promise';
 
 /**
  * A callback function that fires after a new active panel is set
@@ -16,7 +15,7 @@ var Promise = require('promise');
  * know what you're doing when you do so).
  * @constructor CarouselPanels
  */
-var CarouselPanels = Module.extend({
+class CarouselPanels extends Module {
 
     /**
      * When the carousel is instantiated.
@@ -28,9 +27,9 @@ var CarouselPanels = Module.extend({
      * @param {CarouselPanels~onChange} [options.onChange] - When the current panel is changed
      * @param {string} [options.lazyLoadAttr] - The attribute containing the url path to content that is to be lazy loaded
      */
-    initialize: function (options) {
+    constructor (options) {
 
-        this.options = _.extend({
+        options = _.extend({
             panels: [],
             assetLoadingClass: 'carousel-asset-loading',
             autoLoadAssets: true,
@@ -39,22 +38,14 @@ var CarouselPanels = Module.extend({
             lazyLoadAttr: 'data-src'
         }, options);
 
-        this._checkForInitErrors();
-        Module.prototype.initialize.call(this, this.options);
-    },
+        super(options);
 
-    /**
-     * Checks for errors upon initialize.
-     * @memberOf CarouselPanels
-     * @private
-     */
-    _checkForInitErrors: function () {
-        var options = this.options,
-            panelCount = options.panels.length;
-        if (!panelCount) {
+        if (!options.panels.length) {
             console.error('carousel error: no panels were passed in constructor');
         }
-    },
+
+        this.options = options;
+    }
 
     /**
      * Transitions to a panel of an index.
@@ -62,7 +53,7 @@ var CarouselPanels = Module.extend({
      * @memberOf CarouselPanels
      * @returns {Promise}
      */
-    goTo: function (index) {
+    goTo (index) {
         var maxIndex = this.options.panels.length - 1,
             minIndex = 0,
             prevIndex = this.getCurrentIndex(),
@@ -87,7 +78,7 @@ var CarouselPanels = Module.extend({
             }
         }
         return promise;
-    },
+    }
 
     /**
      * Makes all panels inactive except for the one at the index provided.
@@ -95,23 +86,23 @@ var CarouselPanels = Module.extend({
      * @memberOf CarouselPanels
      * @private
      */
-    _updatePanels: function (index) {
+    _updatePanels (index) {
         var panels = this.options.panels,
             prevIndex = this.getCurrentIndex();
         if (prevIndex !== undefined) {
-            panels[prevIndex].kit.classList.remove(this.options.panelActiveClass);
+            panels[prevIndex].classList.remove(this.options.panelActiveClass);
         }
-        panels[index].kit.classList.add(this.options.panelActiveClass);
-    },
+        panels[index].classList.add(this.options.panelActiveClass);
+    }
 
     /**
      * Gets the current index that is showing.
      * @returns {Number} Returns the index
      * @memberOf CarouselPanels
      */
-    getCurrentIndex: function () {
+    getCurrentIndex () {
         return this._currentIndex;
-    },
+    }
 
     /**
      * Loads assets for a given panel.
@@ -119,7 +110,7 @@ var CarouselPanels = Module.extend({
      * @memberOf CarouselPanels
      * @returns {Promise}
      */
-    loadPanelAssets: function (index) {
+    loadPanelAssets (index) {
         var options = this.options,
             panel = options.panels[index],
             assets = panel.querySelectorAll('[' + options.lazyLoadAttr + ']'),
@@ -140,41 +131,51 @@ var CarouselPanels = Module.extend({
         }, this);
 
         return Promise.all(loadPromises);
-    },
+    }
 
     /**
      * Manually lazy loads a resource using an element's data attribute.
-     * @param {HTMLImageElement} el - The image element to load
+     * @param {HTMLImageElement} img - The image element to load
      * @memberOf CarouselPanels
      */
-    loadPanelImageAsset: function (el) {
-        var img = el,
-            src = el.getAttribute(this.options.lazyLoadAttr),
+    loadPanelImageAsset (img) {
+        var src = img.getAttribute(this.options.lazyLoadAttr),
             loadingClass = this.options.assetLoadingClass;
-        img.kit.classList.add(loadingClass);
-        return img.kit.load(src)
-            .then(function() {
-                img.kit.classList.remove(loadingClass);
+        img.classList.add(loadingClass);
+        return new Promise(function (resolve) {
+            img.onload = function () {
+                resolve(img);
+            };
+            img.onerror = function () {
+                // IE 9-11 have an issue where it automatically triggers an error on some images,
+                // and then will immediately trigger onload() causing intermittent errors to appear
+                // until this is fixed or we have a workaround, we will be resolving
+                // even if there is an error
+                resolve(img);
+            };
+            img.src = src;
+        }).then(function() {
+                img.classList.remove(loadingClass);
             })
             .catch(function () {
-                img.kit.classList.remove(loadingClass);
+                img.classList.remove(loadingClass);
             });
-    },
+    }
 
     /**
      * Final cleanup of instance.
      * @memberOf CarouselPanels
      */
-    destroy: function () {
+    destroy () {
         var options = this.options,
             currentIndex = this.getCurrentIndex();
 
         if (currentIndex) {
-            options.panels[currentIndex].kit.classList.remove(options.panelActiveClass);
+            options.panels[currentIndex].classList.remove(options.panelActiveClass);
         }
         this._currentIndex = null;
-        Module.prototype.destroy.call(this);
+        super.destroy();
     }
-});
+}
 
 module.exports = CarouselPanels;

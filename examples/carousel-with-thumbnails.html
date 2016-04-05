@@ -10,17 +10,22 @@
 
         .carousel-image-active {
             display: block;
+            margin-bottom: 5px;
         }
 
         .carousel-thumb {
-            width: 10px;
-            height: 10px;
+            width: 25px;
+            height: 25px;
             background-color: red;
             display: inline-block;
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
+<p>
+    Click on one of the red squares below to interact with the photos.
+</p>
 <div class="carousel">
 
     <img class="carousel-image" src="http://www.gstatic.com/webp/gallery/1.jpg" />
@@ -34,23 +39,17 @@
     </div>
 
 </div>
-
-<script src="//cdnjs.cloudflare.com/ajax/libs/require.js/2.1.18/require.min.js"></script>
+<script src="../dist/carousel.js"></script>
 <script>
-    require(['path/to/carousel.js'], function(Carousel) {
-
-        var thumbnails = document.getElementsByClassName('carousel-thumb');
-
-        var carousel = new Carousel({
-            panels: document.getElementsByClassName('carousel-image'),
-            thumbnails: thumbnails,
-            panelActiveClass: 'carousel-image-active'
-        });
-
-        // click on second thumbnail to show second panel
-        thumbnails[1].click();
-
+    var thumbnails = document.getElementsByClassName('carousel-thumb');
+    var carousel = new Carousel({
+        panels: document.getElementsByClassName('carousel-image'),
+        thumbnails: thumbnails,
+        panelActiveClass: 'carousel-image-active'
     });
+    // show second thumbnail on load
+    carousel.goTo(1);
+
 </script>
 </body>
 </html>
