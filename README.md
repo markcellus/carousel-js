@@ -1,9 +1,12 @@
 [![Build Status](https://travis-ci.org/mkay581/carousel-js.svg?branch=master)](https://travis-ci.org/mkay581/carousel-js)
+[![npm version](https://badge.fury.io/js/carousel-js.svg)](https://badge.fury.io/js/carousel-js)
+[![Bower version](https://badge.fury.io/bo/carousel-js.svg)](https://badge.fury.io/bo/carousel-js)
 
 # Carousel
 
 A lightweight and flexible Carousel class that allows you to build fully functional, advanced Carousels with minimal javascript and markup.
-This library is built using native vanilla javascript. Which means super fast performance. Supports IE10+, all major browsers and even mobile.
+This library is built using native vanilla javascript (for performance) and adheres to latest ECMAScript specs.
+Supports IE10+, all major browsers and even mobile.
 
 ## Inspiration
 
