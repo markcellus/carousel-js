@@ -1,7 +1,7 @@
 {
   "name": "carousel-js",
   "version": "2.1.6",
-  "description": "A carousel class",
+  "description": "Easily implement a dynamic carousel using minimal javascript. Supports Meteor, AngularJS, React, Polymer and any CSS library, e.g. Bootstrap. ",
   "repository": {
     "type": "git",
     "url": "git://github.com/mkay581/carousel-js.git"
@@ -16,10 +16,13 @@
   "license": "MIT",
   "keywords": [
     "carousel",
-    "carousel arrows",
-    "carousel panels",
     "carousels",
-    "carousel thumbnails"
+    "vanilla carousel",
+    "es6 carousel",
+    "carousel component",
+    "carousel module",
+    "react carousel",
+    "angular carousel"
   ],
   "main": "src/carousel.js",
   "dependencies": {
