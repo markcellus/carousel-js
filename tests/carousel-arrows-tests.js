@@ -1,5 +1,5 @@
+'use strict';
 var sinon = require('sinon');
-var TestUtils = require('test-utils');
 var CarouselArrows = require('../src/carousel-arrows');
 var assert = require('assert');
 
@@ -105,7 +105,7 @@ describe('Carousel Arrows', function () {
             onRightArrowClick: rightArrowClickSpy
         });
         assert.equal(rightArrowClickSpy.callCount, 0);
-        rightArrow.dispatchEvent(TestUtils.createEvent('click'));
+        rightArrow.click();
         assert.equal(rightArrowClickSpy.callCount, 1);
         arrowsView.destroy();
     });
@@ -119,10 +119,10 @@ describe('Carousel Arrows', function () {
             onRightArrowClick: rightArrowClickSpy
         });
         arrowsView.destroy();
-        rightArrow.dispatchEvent(TestUtils.createEvent('click'));
+        rightArrow.click();
         assert.equal(rightArrowClickSpy.callCount, 0);
     });
-
+    
     it('should NOT call onRightArrowClick callback when a disabled right arrow is clicked', function () {
         var fixture = document.getElementById('qunit-fixture');
         var rightArrow = document.createElement('div');
@@ -132,11 +132,11 @@ describe('Carousel Arrows', function () {
             onRightArrowClick: rightArrowClickSpy
         });
         arrowsView.disableRightArrow();
-        rightArrow.dispatchEvent(TestUtils.createEvent('click'));
+        rightArrow.click();
         assert.equal(rightArrowClickSpy.callCount, 0);
         arrowsView.destroy();
     });
-
+    
     it('should call onLeftArrowClick callback when left arrow is clicked', function () {
         var fixture = document.getElementById('qunit-fixture');
         var leftArrow = document.createElement('div');
@@ -146,11 +146,11 @@ describe('Carousel Arrows', function () {
             onLeftArrowClick: leftArrowClickSpy
         });
         assert.equal(leftArrowClickSpy.callCount, 0);
-        leftArrow.dispatchEvent(TestUtils.createEvent('click'));
+        leftArrow.click();
         assert.equal(leftArrowClickSpy.callCount, 1);
         arrowsView.destroy();
     });
-
+    
     it('should NOT trigger onLeftArrowClick callback when left arrow is clicked after destruction', function () {
         var fixture = document.getElementById('qunit-fixture');
         var leftArrow = document.createElement('div');
@@ -160,10 +160,10 @@ describe('Carousel Arrows', function () {
             onLeftArrowClick: leftArrowClickSpy
         });
         arrowsView.destroy();
-        leftArrow.dispatchEvent(TestUtils.createEvent('click'));
+        leftArrow.click();
         assert.equal(leftArrowClickSpy.callCount, 0);
     });
-
+    
     it('should add disabled css class on left arrow when update() is called on first panel index', function () {
         var fixture = document.getElementById('qunit-fixture');
         var panelsContainer = document.createElement('div');
@@ -184,7 +184,7 @@ describe('Carousel Arrows', function () {
         assert.ok(leftArrow.classList.contains(disabledClass));
         arrowsView.destroy();
     });
-
+    
     it('should add disabled css class on right arrow when update() is called on last panel index', function () {
         var fixture = document.getElementById('qunit-fixture');
         var panelsContainer = document.createElement('div');
@@ -205,7 +205,7 @@ describe('Carousel Arrows', function () {
         assert.ok(rightArrow.classList.contains(disabledClass));
         arrowsView.destroy();
     });
-
+    
     it('should NOT add disabled css class to left arrow when update() is called on last panel index when there are more panels', function () {
         var fixture = document.getElementById('qunit-fixture');
         var panelsContainer = document.createElement('div');
@@ -226,7 +226,7 @@ describe('Carousel Arrows', function () {
         assert.ok(!leftArrow.classList.contains(disabledClass));
         arrowsView.destroy();
     });
-
+    
     it('should NOT add disabled css class to right arrow when update() is called on first panel index when there are more panels', function () {
         var fixture = document.getElementById('qunit-fixture');
         var panelsContainer = document.createElement('div');
@@ -247,7 +247,7 @@ describe('Carousel Arrows', function () {
         assert.ok(!rightArrow.classList.contains(disabledClass));
         arrowsView.destroy();
     });
-
+    
     it('should add disabled css class to both left and right arrows when update() is called on the only panel that exists', function () {
         var fixture = document.getElementById('qunit-fixture');
         var panelsContainer = document.createElement('div');
@@ -268,7 +268,7 @@ describe('Carousel Arrows', function () {
         assert.ok(rightArrow.classList.contains(disabledClass), 'right arrow is disabled');
         arrowsView.destroy();
     });
-
+    
     it('should remove disabled css class from left arrow after updating to second panel', function () {
         var fixture = document.getElementById('qunit-fixture');
         var panelsContainer = document.createElement('div');
@@ -293,7 +293,7 @@ describe('Carousel Arrows', function () {
         assert.ok(!leftArrow.classList.contains(disabledClass), 'left arrow is no longer disabled');
         arrowsView.destroy();
     });
-
+    
     it('should remove disabled css class from right arrow after updating to second panel after last panel', function () {
         var fixture = document.getElementById('qunit-fixture');
         var panelsContainer = document.createElement('div');

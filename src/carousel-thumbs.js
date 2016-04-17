@@ -1,5 +1,4 @@
 'use strict';
-import Module from 'module-js';
 import _ from 'lodash';
 
 /**
@@ -14,7 +13,7 @@ import _ from 'lodash';
  * know what you're doing when you do so).
  * @class CarouselThumbs
  */
-class CarouselThumbs extends Module {
+class CarouselThumbs {
 
     /**
      * When carousel is instantiated.
@@ -32,7 +31,6 @@ class CarouselThumbs extends Module {
             onChange: null
         }, options);
 
-        super(options);
         this.options = options;
         this._thumbnailEventListener = this.onThumbnailEvent.bind(this);
         this.setup();
@@ -143,7 +141,6 @@ class CarouselThumbs extends Module {
             this.triggerThumbsEventListener('removeEventListener');
 
         }
-        super.destroy();
     }
 }
 

@@ -1,6 +1,5 @@
 'use strict';
 import _ from 'lodash';
-import Module from 'module-js';
 
 /**
  * A callback function that fires after the left arrow is clicked
@@ -16,7 +15,7 @@ import Module from 'module-js';
  * Adds functionality for carousel's left and right arrows.
  * @constructor CarouselArrows
  */
-class CarouselArrows extends Module {
+class CarouselArrows {
 
     /**
      * When the carousel is instantiated.
@@ -44,7 +43,6 @@ class CarouselArrows extends Module {
             console.error('Carousel Arrows Error: no left and right arrows were passed into constructor');
         }
 
-        super(options);
         this.options = options;
 
         this.arrows = [];
@@ -176,7 +174,6 @@ class CarouselArrows extends Module {
         if (this.options.rightArrow) {
             this.options.rightArrow.removeEventListener('click', this._rightArrowEventListener);
         }
-        super.destroy();
     }
 }
 

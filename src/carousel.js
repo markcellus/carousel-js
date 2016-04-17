@@ -3,7 +3,6 @@ import CarouselThumbs from './carousel-thumbs';
 import CarouselPanels from './carousel-panels';
 import CarouselArrows from './carousel-arrows';
 import _ from 'lodash';
-import Module from 'module-js';
 /**
  * A callback function that fires after a new active panel is set
  * @callback Carousel~onPanelChange
@@ -18,6 +17,9 @@ import Module from 'module-js';
  * @param {string} [options.assetLoadingClass] - The CSS class that gets added to an asset when it is loading
  * @param {boolean} [options.autoLoadAssets] - Whether or not to automatically load assets when active
  * @param {string} [options.panelActiveClass] - The CSS class that gets added to an panel when it becomes active
+ * @param {string} [options.panelLoadedClass] - The CSS class that gets added to an panel when it is fully loaded
+ * @param {string} [options.panelBackClass] - The CSS class that gets added to all panel elements that appear before the current panel
+ * @param {string} [options.panelForwardClass] - The CSS class that gets added to all panel elements that appear ahead of the current panel
  * @param {Carousel~onPanelChange} [options.onPanelChange] - When the current panel is changed
  * @param {string} [options.lazyLoadAttr] - The attribute containing the url path to content that is to be lazy loaded
  * @param {HTMLCollection} [options.thumbnails] - A collection of elements that are the thumbnails
@@ -25,7 +27,7 @@ import Module from 'module-js';
  * @param {Number} [options.initialIndex] - The index of the panel to go to upon instantiation (if not declared, goTo() must be called manually).
  */
 
-class Carousel extends Module {
+class Carousel {
 
     /**
      * Sets up stuff.
@@ -49,6 +51,9 @@ class Carousel extends Module {
             assetLoadingClass: 'carousel-asset-loading',
             autoLoadAssets: true,
             panelActiveClass: 'carousel-panel-active',
+            panelLoadedClass: 'carousel-panel-loaded',
+            panelBackClass: 'carousel-panel-behind',
+            panelForwardClass: 'carousel-panel-ahead',
             onPanelChange: null,
             lazyLoadAttr: 'data-src',
             thumbnails: [],
@@ -63,31 +68,27 @@ class Carousel extends Module {
             onRightArrowClick: null
         }, options);
 
-        super(options);
-
         this.options = options;
+        this.subModules = {};
         this._checkForInitErrors();
         this.setup();
     }
 
     /**
      * Sets up the carousel instance and all controls.
-     * @memberOf Carousel
      */
     setup () {
 
-        this.subModules = this.subModules || {};
-
         if (!this.subModules.panels) {
-            this.subModules.panels = this.setupPanels(this.options);
+            this.subModules.panels = this._setupPanels(this.options);
         }
 
         if (this.options.thumbnails.length && !this.subModules.thumbnails) {
-            this.subModules.thumbnails = this.setupThumbs(this.options);
+            this.subModules.thumbnails = this._setupThumbs(this.options);
         }
 
         if ((this.options.leftArrow || this.options.rightArrow) && !this.subModules.arrows) {
-            this.subModules.arrows = this.setupArrows(this.options);
+            this.subModules.arrows = this._setupArrows(this.options);
         }
 
         if (typeof this.options.initialIndex === 'number') {
@@ -99,8 +100,9 @@ class Carousel extends Module {
      * Sets up the carousel thumbs.
      * @param {Object} options - The initialize options
      * @return {CarouselThumbs} Returns thumbnail instance
+     * @private
      */
-    setupThumbs (options) {
+    _setupThumbs (options) {
          return new CarouselThumbs(_.extend({}, options, {
             onChange: this.onThumbnailChange.bind(this)
         }));
@@ -110,8 +112,9 @@ class Carousel extends Module {
      * Sets up the carousel panels.
      * @param {Object} options - The initialize options
      * @return {CarouselPanels} Returns panels instance
+     * @private
      */
-    setupPanels (options) {
+    _setupPanels (options) {
         if (options.panels.length) {
             return new CarouselPanels(_.extend({}, options, {
                 onChange: this.onPanelChange.bind(this)
@@ -123,8 +126,9 @@ class Carousel extends Module {
      * Sets up the carousel arrows.
      * @param {Object} options - The initialize options
      * @return {CarouselArrows} Returns arrows instance
+     * @private
      */
-    setupArrows (options) {
+    _setupArrows (options) {
         var internalOptions;
         // make clone of original options
         internalOptions = _.extend({}, options);
@@ -137,7 +141,6 @@ class Carousel extends Module {
     /**
      * Checks for errors upon initialize.
      * @private
-     * @memberOf Carousel
      */
     _checkForInitErrors () {
         var options = this.options,
@@ -153,7 +156,6 @@ class Carousel extends Module {
     /**
      * When a panel index changes.
      * @param {Number} index - The new index
-     * @memberOf Carousel
      */
     onPanelChange (index) {
         if (this.subModules.thumbnails) {
@@ -172,7 +174,6 @@ class Carousel extends Module {
     /**
      * When the thumbnail index changes.
      * @param {Number} index - The new index
-     * @memberOf Carousel
      */
     onThumbnailChange (index) {
         this.goTo(index);
@@ -203,7 +204,6 @@ class Carousel extends Module {
     /**
      * Transition to a new panel and thumbnail.
      * @param {Number} index - The index number to go to
-     * @memberOf Carousel
      */
     goTo (index) {
         var options = this.options,
@@ -233,7 +233,6 @@ class Carousel extends Module {
     /**
      * Gets the current index that is showing.
      * @returns {Number} Returns the index
-     * @memberOf Carousel
      */
     getCurrentIndex () {
         return this.subModules.panels.getCurrentIndex();
@@ -251,6 +250,17 @@ class Carousel extends Module {
      */
     prev () {
         this.goTo(this.getCurrentIndex() - 1);
+    }
+
+    /**
+     * Destroys all sub modules.
+     */
+    destroy () {
+        for (let key in this.subModules) {
+            if (this.subModules.hasOwnProperty(key) && this.subModules[key]) {
+                this.subModules[key].destroy();
+            }
+        }
     }
 }
 

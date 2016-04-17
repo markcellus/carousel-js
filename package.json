@@ -27,11 +27,11 @@
   "main": "src/carousel.js",
   "dependencies": {
     "lodash": "^4.6.1",
-    "module-js": "^3.0.1",
+    "module-js": "^5.4.0",
     "promise": "^7.1.1"
   },
   "devDependencies": {
-    "build-tools": "^3.0.2",
+    "build-tools": "^3.1.0",
     "sinon": "^1.17.3"
   },
   "scripts": {

@@ -1,5 +1,4 @@
 var sinon = require('sinon');
-var TestUtils = require('test-utils');
 var CarouselThumbs = require('../src/carousel-thumbs');
 var assert = require('assert');
 
@@ -21,28 +20,28 @@ describe('Carousel Thumbs', function () {
             thumbnailActiveClass: thumbActiveClass
         });
         // click second thumbnail
-        thumbEls[1].dispatchEvent(TestUtils.createEvent('click'));
+        thumbEls[1].click();
         goToCallCount++;
         assert.ok(thumbEls[1].classList.contains(thumbActiveClass), 'after clicking on second thumbnail, second thumbnail has active class');
         assert.ok(!thumbEls[0].classList.contains(thumbActiveClass), 'first thumbnail no longer has active class');
         assert.ok(!thumbEls[2].classList.contains(thumbActiveClass), 'third thumbnail no longer has active class');
         assert.deepEqual(goToSpy.args[goToCallCount - 1], [1], 'goTo was called with index of second panel');
         // click first thumbnail
-        thumbEls[0].dispatchEvent(TestUtils.createEvent('click'));
+        thumbEls[0].click();
         goToCallCount++;
         assert.ok(thumbEls[0].classList.contains(thumbActiveClass), 'after clicking on first thumbnail, first thumbnail has active class');
         assert.ok(!thumbEls[1].classList.contains(thumbActiveClass), 'second thumbnail no longer has active class');
         assert.ok(!thumbEls[2].classList.contains(thumbActiveClass), 'third thumbnail no longer has active class');
         assert.deepEqual(goToSpy.args[goToCallCount - 1], [0], 'goTo was called with index of first panel');
         // click third thumbnail
-        thumbEls[2].dispatchEvent(TestUtils.createEvent('click'));
+        thumbEls[2].click();
         goToCallCount++;
         assert.ok(thumbEls[2].classList.contains(thumbActiveClass), 'after clicking on third thumbnail, third thumbnail has active class');
         assert.ok(!thumbEls[0].classList.contains(thumbActiveClass), 'first thumbnail no longer has active class');
         assert.ok(!thumbEls[1].classList.contains(thumbActiveClass), 'second thumbnail no longer has active class');
         assert.deepEqual(goToSpy.args[goToCallCount - 1], [2], 'goTo was called with index of third panel');
         // click on third panel AGAIN
-        thumbEls[2].dispatchEvent(TestUtils.createEvent('click'));
+        thumbEls[2].click();
         assert.ok(thumbEls[2].classList.contains(thumbActiveClass), 'after clicking on third thumbnail AGAIN, third thumbnail still has active class');
         assert.ok(!thumbEls[0].classList.contains(thumbActiveClass), 'first thumbnail does not have active class');
         assert.ok(!thumbEls[1].classList.contains(thumbActiveClass), 'second thumbnail does not have active class');
@@ -67,13 +66,13 @@ describe('Carousel Thumbs', function () {
         // destroy immediately
         thumbsView.destroy();
         // click second thumbnail
-        thumbEls[1].dispatchEvent(TestUtils.createEvent('click'));
+        thumbEls[1].click();
         assert.ok(!thumbEls[1].classList.contains(thumbActiveClass), 'second thumbnail does not have active class when clicked');
         // click first thumbnail
-        thumbEls[0].dispatchEvent(TestUtils.createEvent('click'));
+        thumbEls[0].click();
         assert.ok(!thumbEls[0].classList.contains(thumbActiveClass), 'first thumbnail does not have active class when clicked');
         // click third thumbnail
-        thumbEls[2].dispatchEvent(TestUtils.createEvent('click'));
+        thumbEls[2].click();
         assert.ok(!thumbEls[2].classList.contains(thumbActiveClass), 'third thumbnail does not have active class when clicked');
     });
 
@@ -94,11 +93,11 @@ describe('Carousel Thumbs', function () {
         // destroy immediately
         thumbsView.destroy();
         // click second thumbnail
-        thumbEls[1].dispatchEvent(TestUtils.createEvent('click'));
+        thumbEls[1].click();
         // click first thumbnail
-        thumbEls[0].dispatchEvent(TestUtils.createEvent('click'));
+        thumbEls[0].click();
         // click third thumbnail
-        thumbEls[2].dispatchEvent(TestUtils.createEvent('click'));
+        thumbEls[2].click();
         assert.equal(goToSpy.callCount, 0);
         goToSpy.restore();
     });
