@@ -39,7 +39,7 @@
   "main": "src/carousel.js",
   "dependencies": {
     "lodash": "^4.6.1",
-    "module-js": "^5.4.1",
+    "module-js": "^5.9.2",
     "promise": "^7.1.1"
   },
   "devDependencies": {
