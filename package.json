@@ -1,6 +1,6 @@
 {
   "name": "carousel-js",
-  "version": "3.0.1",
+  "version": "3.1.0",
   "description": "Easily implement a dynamic carousel using minimal javascript. Supports Meteor, AngularJS, React, Polymer and any CSS library, e.g. Bootstrap. ",
   "repository": {
     "type": "git",
