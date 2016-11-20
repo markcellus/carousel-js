@@ -2,7 +2,6 @@
 import CarouselThumbs from './carousel-thumbs';
 import CarouselPanels from './carousel-panels';
 import CarouselArrows from './carousel-arrows';
-import _ from 'lodash';
 /**
  * A callback function that fires after a new active panel is set
  * @callback Carousel~onPanelChange
@@ -27,7 +26,7 @@ import _ from 'lodash';
  * @param {Number} [options.initialIndex] - The index of the panel to go to upon instantiation (if not declared, goTo() must be called manually).
  */
 
-class Carousel {
+export default class Carousel {
 
     /**
      * Sets up stuff.
@@ -46,7 +45,7 @@ class Carousel {
             options.thumbnails = [];
         }
 
-        options = _.extend({
+        options = Object.assign({
             panels: [],
             assetLoadingClass: 'carousel-asset-loading',
             autoLoadAssets: true,
@@ -103,7 +102,7 @@ class Carousel {
      * @private
      */
     _setupThumbs (options) {
-         return new CarouselThumbs(_.extend({}, options, {
+         return new CarouselThumbs(Object.assign({}, options, {
             onChange: this.onThumbnailChange.bind(this)
         }));
     }
@@ -116,7 +115,7 @@ class Carousel {
      */
     _setupPanels (options) {
         if (options.panels.length) {
-            return new CarouselPanels(_.extend({}, options, {
+            return new CarouselPanels(Object.assign({}, options, {
                 onChange: this.onPanelChange.bind(this)
             }));
         }
@@ -131,7 +130,7 @@ class Carousel {
     _setupArrows (options) {
         var internalOptions;
         // make clone of original options
-        internalOptions = _.extend({}, options);
+        internalOptions = Object.assign({}, options);
 
         internalOptions.onLeftArrowClick = this.onLeftArrowClick.bind(this);
         internalOptions.onRightArrowClick = this.onRightArrowClick.bind(this);
@@ -263,5 +262,3 @@ class Carousel {
         }
     }
 }
-
-module.exports = Carousel;

@@ -1,9 +1,8 @@
 'use strict';
 import Promise from 'promise';
-import _ from 'lodash';
 import Module from 'module-js';
 
-class CarouselPanel extends Module {
+export default class CarouselPanel extends Module {
 
     /**
      * Sets some stuff up.
@@ -14,7 +13,7 @@ class CarouselPanel extends Module {
      * @param {String} [options.lazyLoadAttr] - The lazy loading attribute of the panel element containing the src to load
      */
     constructor (el, options) {
-        options = _.extend({
+        options = Object.assign({
             activeClass: 'carousel-panel-active',
             lazyLoadAttr: null,
             loadedClass: 'carousel-panel-loaded',
@@ -81,5 +80,3 @@ class CarouselPanel extends Module {
         });
     }
 }
-
-module.exports = CarouselPanel;

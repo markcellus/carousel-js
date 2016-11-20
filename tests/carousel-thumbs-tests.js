@@ -1,6 +1,6 @@
 var sinon = require('sinon');
-var CarouselThumbs = require('../src/carousel-thumbs');
 var assert = require('assert');
+import CarouselThumbs from '../src/carousel-thumbs';
 
 describe('Carousel Thumbs', function () {
 

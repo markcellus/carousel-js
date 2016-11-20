@@ -1,5 +1,4 @@
 'use strict';
-import _ from 'lodash';
 import Promise from 'promise';
 import CarouselPanel from './carousel-panel';
 
@@ -15,7 +14,7 @@ import CarouselPanel from './carousel-panel';
  * know what you're doing when you do so).
  * @constructor CarouselPanels
  */
-class CarouselPanels {
+export default class CarouselPanels {
 
     /**
      * When the carousel is instantiated.
@@ -30,7 +29,7 @@ class CarouselPanels {
      */
     constructor (options) {
 
-        options = _.extend({
+        options = Object.assign({
             panels: [],
             assetLoadedClass: 'carousel-asset-loaded',
             panelActiveClass: 'carousel-panel-active',
@@ -192,5 +191,3 @@ class CarouselPanels {
         });
     }
 }
-
-module.exports = CarouselPanels;

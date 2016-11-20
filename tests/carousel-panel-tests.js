@@ -1,8 +1,8 @@
 "use strict";
 var sinon = require('sinon');
-var CarouselPanel = require('../src/carousel-panel');
+import CarouselPanel from '../src/carousel-panel';
 var assert = require('assert');
-var _ = require('lodash');
+var defer = require('lodash.defer');
 var Promise = require('promise');
 // must import module in order to operate off of prototype
 import Module from 'module-js';
@@ -35,7 +35,7 @@ describe('Carousel Panel', function () {
         image.onload();
         // delay following code until the load()
         // call stack has completed since it is wrapped in a Promise
-        _.defer(function () {
+        defer(function () {
             assert.ok(image.classList.contains(imageLoadedClass), 'once image is loaded, the loaded class is added');
             panel.destroy();
             done();
@@ -57,10 +57,10 @@ describe('Carousel Panel', function () {
         panel.load().then(onLoadSpy);
         assert.equal(onLoadSpy.callCount, 0, 'load hasnt resolved initially');
         images[0].onload();
-        _.defer(function () {
+        defer(function () {
             assert.equal(onLoadSpy.callCount, 0, 'load still hasnt resolved after first image load because there is also a second one');
             images[1].onload();
-            _.defer(function () {
+            defer(function () {
                 assert.equal(onLoadSpy.callCount, 1, 'load has resolved after final image loads');
                 panel.destroy();
                 moduleLoadStub.restore();

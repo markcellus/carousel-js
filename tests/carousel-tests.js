@@ -1,10 +1,10 @@
 'use strict';
 var sinon = require('sinon');
-var CarouselArrows = require('../src/carousel-arrows');
-var CarouselThumbs = require('../src/carousel-thumbs');
-var Carousel = require('../src/carousel');
+import Carousel from '../src/carousel';
+import CarouselArrows from '../src/carousel-arrows';
+import CarouselThumbs from '../src/carousel-thumbs';
+import CarouselPanels from '../src/carousel-panels';
 var assert = require('assert');
-var CarouselPanels = require('../src/carousel');
 
 describe('Carousel', function () {
 
@@ -73,20 +73,29 @@ describe('Carousel', function () {
         carouselView.destroy();
     });
 
-    it('should return CarouselPanel\'s getCurrentIndex() when getCurrentIndex() is called', function () {
+    it('should return CarouselPanel\'s getCurrentIndex() of 0 after initialization', function () {
         var carouselEl = document.createElement('div');
         carouselEl.innerHTML =
             '<div class="carousel-panel"></div>' +
             '<div class="carousel-panel"></div>' +
             '<div class="carousel-panel"></div>';
-        var carouselPanelsGetCurrentIndexStub = sinon.stub(CarouselPanels.prototype, 'getCurrentIndex');
         var panels = carouselEl.getElementsByClassName('carousel-panel');
         var carouselView = new Carousel({panels: panels});
-        var panelReturnValue = 2500;
-        carouselPanelsGetCurrentIndexStub.returns(panelReturnValue);
-        assert.equal(carouselView.getCurrentIndex(), panelReturnValue);
+        assert.equal(carouselView.getCurrentIndex(), 0);
         carouselView.destroy();
-        carouselPanelsGetCurrentIndexStub.restore();
+    });
+
+    it('should return CarouselPanel\'s getCurrentIndex() of 1 after switching to second panel', function () {
+        var carouselEl = document.createElement('div');
+        carouselEl.innerHTML =
+            '<div class="carousel-panel"></div>' +
+            '<div class="carousel-panel"></div>' +
+            '<div class="carousel-panel"></div>';
+        var panels = carouselEl.getElementsByClassName('carousel-panel');
+        var carouselView = new Carousel({panels: panels});
+        carouselView.goTo(1);
+        assert.equal(carouselView.getCurrentIndex(), 1);
+        carouselView.destroy();
     });
 
     it('should invoke the onPanelChange function with the index passed to goTo()', function () {

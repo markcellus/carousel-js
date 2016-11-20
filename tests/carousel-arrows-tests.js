@@ -1,6 +1,6 @@
 'use strict';
 var sinon = require('sinon');
-var CarouselArrows = require('../src/carousel-arrows');
+import CarouselArrows from '../src/carousel-arrows';
 var assert = require('assert');
 
 describe('Carousel Arrows', function () {

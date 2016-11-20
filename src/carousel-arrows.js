@@ -1,5 +1,4 @@
 'use strict';
-import _ from 'lodash';
 
 /**
  * A callback function that fires after the left arrow is clicked
@@ -15,7 +14,7 @@ import _ from 'lodash';
  * Adds functionality for carousel's left and right arrows.
  * @constructor CarouselArrows
  */
-class CarouselArrows {
+export default class CarouselArrows {
 
     /**
      * When the carousel is instantiated.
@@ -29,7 +28,7 @@ class CarouselArrows {
      */
     constructor (options) {
 
-        options = _.extend({
+        options = Object.assign({
             leftArrow: null,
             rightArrow: null,
             panels: [],
@@ -176,5 +175,3 @@ class CarouselArrows {
         }
     }
 }
-
-module.exports = CarouselArrows;

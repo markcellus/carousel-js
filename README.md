@@ -22,8 +22,8 @@ This library has been used and adopted on many projects, including:
 
 ## Usage
 
-In order to use carousel, you can use one of the [pre-built files](/dist) if you want to quickly get started. Or, alternatively
- you can use the [source files](/src) directly if you are running your own build processes.
+In order to use carousel, you can use one of the [pre-built files](/dist) if you want to quickly get started. 
+Or, alternatively you can install as an npm package or use the [source files](/src) directly if you are using [Browserify](http://browserify.org/).
 
 ### Carousel
 

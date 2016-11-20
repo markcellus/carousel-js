@@ -1,9 +1,8 @@
 "use strict";
-var CarouselPanels = require('./../src/carousel-panels');
-var CarouselPanel = require('./../src/carousel-panel');
+import CarouselPanels from './../src/carousel-panels';
+import CarouselPanel from './../src/carousel-panel';
 var sinon = require('sinon');
 var assert = require('assert');
-var _ = require('lodash');
 var Promise = require('promise');
 
 describe('Carousel Panels', function () {

@@ -1,5 +1,4 @@
 'use strict';
-import _ from 'lodash';
 
 /**
  * A callback function that fires after a new active panel is set
@@ -13,7 +12,7 @@ import _ from 'lodash';
  * know what you're doing when you do so).
  * @class CarouselThumbs
  */
-class CarouselThumbs {
+export default class CarouselThumbs {
 
     /**
      * When carousel is instantiated.
@@ -24,7 +23,7 @@ class CarouselThumbs {
      * @memberOf CarouselThumbs
      */
     constructor (options) {
-        options = _.extend({
+        options = Object.assign({
             thumbnails: [],
             thumbnailActiveTriggerEvent: 'click',
             thumbnailActiveClass: 'carousel-thumbnail-active',
@@ -143,5 +142,3 @@ class CarouselThumbs {
         }
     }
 }
-
-module.exports = CarouselThumbs;
