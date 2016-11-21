@@ -1,6 +1,5 @@
 [![Build Status](https://travis-ci.org/mkay581/carousel-js.svg?branch=master)](https://travis-ci.org/mkay581/carousel-js)
 [![npm version](https://badge.fury.io/js/carousel-js.svg)](https://badge.fury.io/js/carousel-js)
-[![Bower version](https://badge.fury.io/bo/carousel-js.svg)](https://badge.fury.io/bo/carousel-js)
 
 # Carousel
 
@@ -19,11 +18,15 @@ This library has been used and adopted on many projects, including:
 * [mobile USPS.com](http://m.usps.com)
 * [barclaycardus.com](http://barclaycardus.com)
 
+## Installation
+
+You can install as an npm package if using a build system like [Browserify](http://browserify.org/). 
+
+```
+npm install carousel-js --save-dev
+```
 
 ## Usage
-
-In order to use carousel, you can use one of the [pre-built files](/dist) if you want to quickly get started. 
-Or, alternatively you can install as an npm package or use the [source files](/src) directly if you are using [Browserify](http://browserify.org/).
 
 ### Carousel
 

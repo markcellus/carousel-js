@@ -25,21 +25,6 @@
     "angular carousel"
   ],
   "main": "./src/carousel.js",
-  "dependencies": {
-    "lodash.defer": "^4.1.0",
-    "module-js": "^5.10.9",
-    "promise": "^7.1.1",
-    "resource-manager-js": "^2.3.7"
-  },
-  "devDependencies": {
-    "babel-plugin-add-module-exports": "^0.2.1",
-    "babel-plugin-transform-es2015-modules-commonjs": "^6.18.0",
-    "babel-plugin-transform-object-assign": "^6.8.0",
-    "babel-preset-es2015": "^6.18.0",
-    "babelify": "^7.3.0",
-    "build-tools": "^6.0.4",
-    "sinon": "^1.17.3"
-  },
   "browserify": {
     "transform": [
       [
@@ -50,9 +35,6 @@
           ],
           "plugins": [
             [
-              "add-module-exports"
-            ],
-            [
               "transform-object-assign"
             ],
             [
@@ -62,6 +44,21 @@
         }
       ]
     ]
+  },
+  "dependencies": {
+    "babel-plugin-transform-es2015-modules-commonjs": "^6.18.0",
+    "babel-plugin-transform-object-assign": "^6.8.0",
+    "babel-preset-es2015": "^6.18.0",
+    "babelify": "^7.3.0",
+    "lodash.defer": "^4.1.0",
+    "module-js": "^5.15.0",
+    "promise": "^7.1.1",
+    "resource-manager-js": "^2.6.1"
+  },
+  "devDependencies": {
+    "babel-plugin-add-module-exports": "^0.2.1",
+    "build-tools": "^6.0.7",
+    "sinon": "^1.17.3"
   },
   "scripts": {
     "test": "bt test",

@@ -6,10 +6,23 @@ module.exports = {
         },
         browserifyOptions: {
             standalone: 'Carousel',
+            transform: [
+                [
+                    "babelify",
+                    {
+                        "plugins": [
+                            [
+                                "add-module-exports"
+                            ]
+                        ]
+                    }
+                ]
+            ]
         },
         minifyFiles: {
             'dist/carousel-min.js': ['dist/carousel.js']
         },
+
         bannerFiles: ['dist/*']
 
     },
