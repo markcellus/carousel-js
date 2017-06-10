@@ -1,10 +1,426 @@
 /** 
-* carousel-js - v3.1.1.
+* carousel-js - v4.0.0.
 * git://github.com/mkay581/carousel-js.git
-* Copyright 2016 Mark Kennedy. Licensed MIT.
+* Copyright 2017 Mark Kennedy. Licensed MIT.
 */
 
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.Carousel = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+
+},{}],2:[function(require,module,exports){
+(function (process){
+// Copyright Joyent, Inc. and other Node contributors.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and associated documentation files (the
+// "Software"), to deal in the Software without restriction, including
+// without limitation the rights to use, copy, modify, merge, publish,
+// distribute, sublicense, and/or sell copies of the Software, and to permit
+// persons to whom the Software is furnished to do so, subject to the
+// following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+// USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+// resolves . and .. elements in a path array with directory names there
+// must be no slashes, empty elements, or device names (c:\) in the array
+// (so also no leading and trailing slashes - it does not distinguish
+// relative and absolute paths)
+function normalizeArray(parts, allowAboveRoot) {
+  // if the path tries to go above the root, `up` ends up > 0
+  var up = 0;
+  for (var i = parts.length - 1; i >= 0; i--) {
+    var last = parts[i];
+    if (last === '.') {
+      parts.splice(i, 1);
+    } else if (last === '..') {
+      parts.splice(i, 1);
+      up++;
+    } else if (up) {
+      parts.splice(i, 1);
+      up--;
+    }
+  }
+
+  // if the path is allowed to go above the root, restore leading ..s
+  if (allowAboveRoot) {
+    for (; up--; up) {
+      parts.unshift('..');
+    }
+  }
+
+  return parts;
+}
+
+// Split a filename into [root, dir, basename, ext], unix version
+// 'root' is just a slash, or nothing.
+var splitPathRe =
+    /^(\/?|)([\s\S]*?)((?:\.{1,2}|[^\/]+?|)(\.[^.\/]*|))(?:[\/]*)$/;
+var splitPath = function(filename) {
+  return splitPathRe.exec(filename).slice(1);
+};
+
+// path.resolve([from ...], to)
+// posix version
+exports.resolve = function() {
+  var resolvedPath = '',
+      resolvedAbsolute = false;
+
+  for (var i = arguments.length - 1; i >= -1 && !resolvedAbsolute; i--) {
+    var path = (i >= 0) ? arguments[i] : process.cwd();
+
+    // Skip empty and invalid entries
+    if (typeof path !== 'string') {
+      throw new TypeError('Arguments to path.resolve must be strings');
+    } else if (!path) {
+      continue;
+    }
+
+    resolvedPath = path + '/' + resolvedPath;
+    resolvedAbsolute = path.charAt(0) === '/';
+  }
+
+  // At this point the path should be resolved to a full absolute path, but
+  // handle relative paths to be safe (might happen when process.cwd() fails)
+
+  // Normalize the path
+  resolvedPath = normalizeArray(filter(resolvedPath.split('/'), function(p) {
+    return !!p;
+  }), !resolvedAbsolute).join('/');
+
+  return ((resolvedAbsolute ? '/' : '') + resolvedPath) || '.';
+};
+
+// path.normalize(path)
+// posix version
+exports.normalize = function(path) {
+  var isAbsolute = exports.isAbsolute(path),
+      trailingSlash = substr(path, -1) === '/';
+
+  // Normalize the path
+  path = normalizeArray(filter(path.split('/'), function(p) {
+    return !!p;
+  }), !isAbsolute).join('/');
+
+  if (!path && !isAbsolute) {
+    path = '.';
+  }
+  if (path && trailingSlash) {
+    path += '/';
+  }
+
+  return (isAbsolute ? '/' : '') + path;
+};
+
+// posix version
+exports.isAbsolute = function(path) {
+  return path.charAt(0) === '/';
+};
+
+// posix version
+exports.join = function() {
+  var paths = Array.prototype.slice.call(arguments, 0);
+  return exports.normalize(filter(paths, function(p, index) {
+    if (typeof p !== 'string') {
+      throw new TypeError('Arguments to path.join must be strings');
+    }
+    return p;
+  }).join('/'));
+};
+
+
+// path.relative(from, to)
+// posix version
+exports.relative = function(from, to) {
+  from = exports.resolve(from).substr(1);
+  to = exports.resolve(to).substr(1);
+
+  function trim(arr) {
+    var start = 0;
+    for (; start < arr.length; start++) {
+      if (arr[start] !== '') break;
+    }
+
+    var end = arr.length - 1;
+    for (; end >= 0; end--) {
+      if (arr[end] !== '') break;
+    }
+
+    if (start > end) return [];
+    return arr.slice(start, end - start + 1);
+  }
+
+  var fromParts = trim(from.split('/'));
+  var toParts = trim(to.split('/'));
+
+  var length = Math.min(fromParts.length, toParts.length);
+  var samePartsLength = length;
+  for (var i = 0; i < length; i++) {
+    if (fromParts[i] !== toParts[i]) {
+      samePartsLength = i;
+      break;
+    }
+  }
+
+  var outputParts = [];
+  for (var i = samePartsLength; i < fromParts.length; i++) {
+    outputParts.push('..');
+  }
+
+  outputParts = outputParts.concat(toParts.slice(samePartsLength));
+
+  return outputParts.join('/');
+};
+
+exports.sep = '/';
+exports.delimiter = ':';
+
+exports.dirname = function(path) {
+  var result = splitPath(path),
+      root = result[0],
+      dir = result[1];
+
+  if (!root && !dir) {
+    // No dirname whatsoever
+    return '.';
+  }
+
+  if (dir) {
+    // It has a dirname, strip trailing slash
+    dir = dir.substr(0, dir.length - 1);
+  }
+
+  return root + dir;
+};
+
+
+exports.basename = function(path, ext) {
+  var f = splitPath(path)[2];
+  // TODO: make this comparison case-insensitive on windows?
+  if (ext && f.substr(-1 * ext.length) === ext) {
+    f = f.substr(0, f.length - ext.length);
+  }
+  return f;
+};
+
+
+exports.extname = function(path) {
+  return splitPath(path)[3];
+};
+
+function filter (xs, f) {
+    if (xs.filter) return xs.filter(f);
+    var res = [];
+    for (var i = 0; i < xs.length; i++) {
+        if (f(xs[i], i, xs)) res.push(xs[i]);
+    }
+    return res;
+}
+
+// String.prototype.substr - negative index don't work in IE8
+var substr = 'ab'.substr(-1) === 'b'
+    ? function (str, start, len) { return str.substr(start, len) }
+    : function (str, start, len) {
+        if (start < 0) start = str.length + start;
+        return str.substr(start, len);
+    }
+;
+
+}).call(this,require('_process'))
+},{"_process":3}],3:[function(require,module,exports){
+// shim for using process in browser
+var process = module.exports = {};
+
+// cached from whatever global is present so that test runners that stub it
+// don't break things.  But we need to wrap it in a try catch in case it is
+// wrapped in strict mode code which doesn't define any globals.  It's inside a
+// function because try/catches deoptimize in certain engines.
+
+var cachedSetTimeout;
+var cachedClearTimeout;
+
+function defaultSetTimout() {
+    throw new Error('setTimeout has not been defined');
+}
+function defaultClearTimeout () {
+    throw new Error('clearTimeout has not been defined');
+}
+(function () {
+    try {
+        if (typeof setTimeout === 'function') {
+            cachedSetTimeout = setTimeout;
+        } else {
+            cachedSetTimeout = defaultSetTimout;
+        }
+    } catch (e) {
+        cachedSetTimeout = defaultSetTimout;
+    }
+    try {
+        if (typeof clearTimeout === 'function') {
+            cachedClearTimeout = clearTimeout;
+        } else {
+            cachedClearTimeout = defaultClearTimeout;
+        }
+    } catch (e) {
+        cachedClearTimeout = defaultClearTimeout;
+    }
+} ())
+function runTimeout(fun) {
+    if (cachedSetTimeout === setTimeout) {
+        //normal enviroments in sane situations
+        return setTimeout(fun, 0);
+    }
+    // if setTimeout wasn't available but was latter defined
+    if ((cachedSetTimeout === defaultSetTimout || !cachedSetTimeout) && setTimeout) {
+        cachedSetTimeout = setTimeout;
+        return setTimeout(fun, 0);
+    }
+    try {
+        // when when somebody has screwed with setTimeout but no I.E. maddness
+        return cachedSetTimeout(fun, 0);
+    } catch(e){
+        try {
+            // When we are in I.E. but the script has been evaled so I.E. doesn't trust the global object when called normally
+            return cachedSetTimeout.call(null, fun, 0);
+        } catch(e){
+            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error
+            return cachedSetTimeout.call(this, fun, 0);
+        }
+    }
+
+
+}
+function runClearTimeout(marker) {
+    if (cachedClearTimeout === clearTimeout) {
+        //normal enviroments in sane situations
+        return clearTimeout(marker);
+    }
+    // if clearTimeout wasn't available but was latter defined
+    if ((cachedClearTimeout === defaultClearTimeout || !cachedClearTimeout) && clearTimeout) {
+        cachedClearTimeout = clearTimeout;
+        return clearTimeout(marker);
+    }
+    try {
+        // when when somebody has screwed with setTimeout but no I.E. maddness
+        return cachedClearTimeout(marker);
+    } catch (e){
+        try {
+            // When we are in I.E. but the script has been evaled so I.E. doesn't  trust the global object when called normally
+            return cachedClearTimeout.call(null, marker);
+        } catch (e){
+            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error.
+            // Some versions of I.E. have different rules for clearTimeout vs setTimeout
+            return cachedClearTimeout.call(this, marker);
+        }
+    }
+
+
+
+}
+var queue = [];
+var draining = false;
+var currentQueue;
+var queueIndex = -1;
+
+function cleanUpNextTick() {
+    if (!draining || !currentQueue) {
+        return;
+    }
+    draining = false;
+    if (currentQueue.length) {
+        queue = currentQueue.concat(queue);
+    } else {
+        queueIndex = -1;
+    }
+    if (queue.length) {
+        drainQueue();
+    }
+}
+
+function drainQueue() {
+    if (draining) {
+        return;
+    }
+    var timeout = runTimeout(cleanUpNextTick);
+    draining = true;
+
+    var len = queue.length;
+    while(len) {
+        currentQueue = queue;
+        queue = [];
+        while (++queueIndex < len) {
+            if (currentQueue) {
+                currentQueue[queueIndex].run();
+            }
+        }
+        queueIndex = -1;
+        len = queue.length;
+    }
+    currentQueue = null;
+    draining = false;
+    runClearTimeout(timeout);
+}
+
+process.nextTick = function (fun) {
+    var args = new Array(arguments.length - 1);
+    if (arguments.length > 1) {
+        for (var i = 1; i < arguments.length; i++) {
+            args[i - 1] = arguments[i];
+        }
+    }
+    queue.push(new Item(fun, args));
+    if (queue.length === 1 && !draining) {
+        runTimeout(drainQueue);
+    }
+};
+
+// v8 likes predictible objects
+function Item(fun, array) {
+    this.fun = fun;
+    this.array = array;
+}
+Item.prototype.run = function () {
+    this.fun.apply(null, this.array);
+};
+process.title = 'browser';
+process.browser = true;
+process.env = {};
+process.argv = [];
+process.version = ''; // empty string to avoid regexp issues
+process.versions = {};
+
+function noop() {}
+
+process.on = noop;
+process.addListener = noop;
+process.once = noop;
+process.off = noop;
+process.removeListener = noop;
+process.removeAllListeners = noop;
+process.emit = noop;
+process.prependListener = noop;
+process.prependOnceListener = noop;
+
+process.listeners = function (name) { return [] }
+
+process.binding = function (name) {
+    throw new Error('process.binding is not supported');
+};
+
+process.cwd = function () { return '/' };
+process.chdir = function (dir) {
+    throw new Error('process.chdir is not supported');
+};
+process.umask = function() { return 0; };
+
+},{}],4:[function(require,module,exports){
 (function (process,__filename){
 /** vim: et:ts=4:sw=4:sts=4
  * @license amdefine 1.0.1 Copyright (c) 2011-2016, The Dojo Foundation All Rights Reserved.
@@ -309,7 +725,7 @@ function amdefine(module, requireFn) {
 module.exports = amdefine;
 
 }).call(this,require('_process'),"/node_modules/amdefine/amdefine.js")
-},{"_process":65,"path":64}],2:[function(require,module,exports){
+},{"_process":3,"path":2}],5:[function(require,module,exports){
 "use strict";
 
 // rawAsap provides everything we need except exception management.
@@ -377,7 +793,7 @@ RawTask.prototype.call = function () {
     }
 };
 
-},{"./raw":3}],3:[function(require,module,exports){
+},{"./raw":6}],6:[function(require,module,exports){
 (function (global){
 "use strict";
 
@@ -604,14 +1020,14 @@ rawAsap.makeRequestCallFromTimer = makeRequestCallFromTimer;
 // https://github.com/tildeio/rsvp.js/blob/cddf7232546a9cf858524b75cde6f9edf72620a7/lib/rsvp/asap.js
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],4:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 (function (process,global){
 /*!
  * @overview es6-promise - a tiny implementation of Promises/A+.
  * @copyright Copyright (c) 2014 Yehuda Katz, Tom Dale, Stefan Penner and contributors (Conversion to ES6 API by Jake Archibald)
  * @license   Licensed under MIT license
  *            See https://raw.githubusercontent.com/stefanpenner/es6-promise/master/LICENSE
- * @version   4.0.5
+ * @version   4.1.0
  */
 
 (function (global, factory) {
@@ -919,6 +1335,7 @@ function handleMaybeThenable(promise, maybeThenable, then$$) {
   } else {
     if (then$$ === GET_THEN_ERROR) {
       _reject(promise, GET_THEN_ERROR.error);
+      GET_THEN_ERROR.error = null;
     } else if (then$$ === undefined) {
       fulfill(promise, maybeThenable);
     } else if (isFunction(then$$)) {
@@ -1039,7 +1456,7 @@ function invokeCallback(settled, promise, callback, detail) {
     if (value === TRY_CATCH_ERROR) {
       failed = true;
       error = value.error;
-      value = null;
+      value.error = null;
     } else {
       succeeded = true;
     }
@@ -1763,8 +2180,9 @@ return Promise;
 
 })));
 
+
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"_process":65}],5:[function(require,module,exports){
+},{"_process":3}],8:[function(require,module,exports){
 'use strict';
 
 exports.__esModule = true;
@@ -1831,7 +2249,7 @@ exports['default'] = inst;
 module.exports = exports['default'];
 
 
-},{"./handlebars.runtime":6,"./handlebars/compiler/ast":8,"./handlebars/compiler/base":9,"./handlebars/compiler/compiler":11,"./handlebars/compiler/javascript-compiler":13,"./handlebars/compiler/visitor":16,"./handlebars/no-conflict":30}],6:[function(require,module,exports){
+},{"./handlebars.runtime":9,"./handlebars/compiler/ast":11,"./handlebars/compiler/base":12,"./handlebars/compiler/compiler":14,"./handlebars/compiler/javascript-compiler":16,"./handlebars/compiler/visitor":19,"./handlebars/no-conflict":33}],9:[function(require,module,exports){
 'use strict';
 
 exports.__esModule = true;
@@ -1899,7 +2317,7 @@ exports['default'] = inst;
 module.exports = exports['default'];
 
 
-},{"./handlebars/base":7,"./handlebars/exception":20,"./handlebars/no-conflict":30,"./handlebars/runtime":31,"./handlebars/safe-string":32,"./handlebars/utils":33}],7:[function(require,module,exports){
+},{"./handlebars/base":10,"./handlebars/exception":23,"./handlebars/no-conflict":33,"./handlebars/runtime":34,"./handlebars/safe-string":35,"./handlebars/utils":36}],10:[function(require,module,exports){
 'use strict';
 
 exports.__esModule = true;
@@ -1922,7 +2340,7 @@ var _logger = require('./logger');
 
 var _logger2 = _interopRequireDefault(_logger);
 
-var VERSION = '4.0.5';
+var VERSION = '4.0.10';
 exports.VERSION = VERSION;
 var COMPILER_REVISION = 7;
 
@@ -2005,7 +2423,7 @@ exports.createFrame = _utils.createFrame;
 exports.logger = _logger2['default'];
 
 
-},{"./decorators":18,"./exception":20,"./helpers":21,"./logger":29,"./utils":33}],8:[function(require,module,exports){
+},{"./decorators":21,"./exception":23,"./helpers":24,"./logger":32,"./utils":36}],11:[function(require,module,exports){
 'use strict';
 
 exports.__esModule = true;
@@ -2038,7 +2456,7 @@ exports['default'] = AST;
 module.exports = exports['default'];
 
 
-},{}],9:[function(require,module,exports){
+},{}],12:[function(require,module,exports){
 'use strict';
 
 exports.__esModule = true;
@@ -2088,7 +2506,7 @@ function parse(input, options) {
 }
 
 
-},{"../utils":33,"./helpers":12,"./parser":14,"./whitespace-control":17}],10:[function(require,module,exports){
+},{"../utils":36,"./helpers":15,"./parser":17,"./whitespace-control":20}],13:[function(require,module,exports){
 /* global define */
 'use strict';
 
@@ -2256,7 +2674,7 @@ exports['default'] = CodeGen;
 module.exports = exports['default'];
 
 
-},{"../utils":33,"source-map":46}],11:[function(require,module,exports){
+},{"../utils":36,"source-map":38}],14:[function(require,module,exports){
 /* eslint-disable new-cap */
 
 'use strict';
@@ -2345,7 +2763,7 @@ Compiler.prototype = {
       for (var _name in knownHelpers) {
         /* istanbul ignore else */
         if (_name in knownHelpers) {
-          options.knownHelpers[_name] = knownHelpers[_name];
+          this.options.knownHelpers[_name] = knownHelpers[_name];
         }
       }
     }
@@ -2760,6 +3178,7 @@ function compile(input, options, env) {
     throw new _exception2['default']('You must pass a string or Handlebars AST to Handlebars.compile. You passed ' + input);
   }
 
+  options = _utils.extend({}, options);
   if (!('data' in options)) {
     options.data = true;
   }
@@ -2830,7 +3249,7 @@ function transformLiteralToPath(sexpr) {
 }
 
 
-},{"../exception":20,"../utils":33,"./ast":8}],12:[function(require,module,exports){
+},{"../exception":23,"../utils":36,"./ast":11}],15:[function(require,module,exports){
 'use strict';
 
 exports.__esModule = true;
@@ -3062,7 +3481,7 @@ function preparePartialBlock(open, program, close, locInfo) {
 }
 
 
-},{"../exception":20}],13:[function(require,module,exports){
+},{"../exception":23}],16:[function(require,module,exports){
 'use strict';
 
 exports.__esModule = true;
@@ -4059,7 +4478,7 @@ JavaScriptCompiler.prototype = {
     var params = [],
         paramsInit = this.setupHelperArgs(name, paramSize, params, blockHelper);
     var foundHelper = this.nameLookup('helpers', name, 'helper'),
-        callContext = this.aliasable(this.contextName(0) + ' != null ? ' + this.contextName(0) + ' : {}');
+        callContext = this.aliasable(this.contextName(0) + ' != null ? ' + this.contextName(0) + ' : (container.nullContext || {})');
 
     return {
       params: params,
@@ -4192,11 +4611,12 @@ exports['default'] = JavaScriptCompiler;
 module.exports = exports['default'];
 
 
-},{"../base":7,"../exception":20,"../utils":33,"./code-gen":10}],14:[function(require,module,exports){
-/* istanbul ignore next */
+},{"../base":10,"../exception":23,"../utils":36,"./code-gen":13}],17:[function(require,module,exports){
+// File ignored in coverage tests via setting in .istanbul.yml
 /* Jison generated parser */
 "use strict";
 
+exports.__esModule = true;
 var handlebars = (function () {
     var parser = { trace: function trace() {},
         yy: {},
@@ -4928,11 +5348,11 @@ var handlebars = (function () {
         this.yy = {};
     }Parser.prototype = parser;parser.Parser = Parser;
     return new Parser();
-})();exports.__esModule = true;
-exports['default'] = handlebars;
+})();exports["default"] = handlebars;
+module.exports = exports["default"];
 
 
-},{}],15:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
 /* eslint-disable new-cap */
 'use strict';
 
@@ -5120,7 +5540,7 @@ PrintVisitor.prototype.HashPair = function (pair) {
 /* eslint-enable new-cap */
 
 
-},{"./visitor":16}],16:[function(require,module,exports){
+},{"./visitor":19}],19:[function(require,module,exports){
 'use strict';
 
 exports.__esModule = true;
@@ -5262,7 +5682,7 @@ exports['default'] = Visitor;
 module.exports = exports['default'];
 
 
-},{"../exception":20}],17:[function(require,module,exports){
+},{"../exception":23}],20:[function(require,module,exports){
 'use strict';
 
 exports.__esModule = true;
@@ -5485,7 +5905,7 @@ exports['default'] = WhitespaceControl;
 module.exports = exports['default'];
 
 
-},{"./visitor":16}],18:[function(require,module,exports){
+},{"./visitor":19}],21:[function(require,module,exports){
 'use strict';
 
 exports.__esModule = true;
@@ -5503,7 +5923,7 @@ function registerDefaultDecorators(instance) {
 }
 
 
-},{"./decorators/inline":19}],19:[function(require,module,exports){
+},{"./decorators/inline":22}],22:[function(require,module,exports){
 'use strict';
 
 exports.__esModule = true;
@@ -5534,7 +5954,7 @@ exports['default'] = function (instance) {
 module.exports = exports['default'];
 
 
-},{"../utils":33}],20:[function(require,module,exports){
+},{"../utils":36}],23:[function(require,module,exports){
 'use strict';
 
 exports.__esModule = true;
@@ -5571,7 +5991,10 @@ function Exception(message, node) {
       // Work around issue under safari where we can't directly set the column value
       /* istanbul ignore next */
       if (Object.defineProperty) {
-        Object.defineProperty(this, 'column', { value: column });
+        Object.defineProperty(this, 'column', {
+          value: column,
+          enumerable: true
+        });
       } else {
         this.column = column;
       }
@@ -5587,7 +6010,7 @@ exports['default'] = Exception;
 module.exports = exports['default'];
 
 
-},{}],21:[function(require,module,exports){
+},{}],24:[function(require,module,exports){
 'use strict';
 
 exports.__esModule = true;
@@ -5635,7 +6058,7 @@ function registerDefaultHelpers(instance) {
 }
 
 
-},{"./helpers/block-helper-missing":22,"./helpers/each":23,"./helpers/helper-missing":24,"./helpers/if":25,"./helpers/log":26,"./helpers/lookup":27,"./helpers/with":28}],22:[function(require,module,exports){
+},{"./helpers/block-helper-missing":25,"./helpers/each":26,"./helpers/helper-missing":27,"./helpers/if":28,"./helpers/log":29,"./helpers/lookup":30,"./helpers/with":31}],25:[function(require,module,exports){
 'use strict';
 
 exports.__esModule = true;
@@ -5676,7 +6099,7 @@ exports['default'] = function (instance) {
 module.exports = exports['default'];
 
 
-},{"../utils":33}],23:[function(require,module,exports){
+},{"../utils":36}],26:[function(require,module,exports){
 'use strict';
 
 exports.__esModule = true;
@@ -5772,7 +6195,7 @@ exports['default'] = function (instance) {
 module.exports = exports['default'];
 
 
-},{"../exception":20,"../utils":33}],24:[function(require,module,exports){
+},{"../exception":23,"../utils":36}],27:[function(require,module,exports){
 'use strict';
 
 exports.__esModule = true;
@@ -5799,7 +6222,7 @@ exports['default'] = function (instance) {
 module.exports = exports['default'];
 
 
-},{"../exception":20}],25:[function(require,module,exports){
+},{"../exception":23}],28:[function(require,module,exports){
 'use strict';
 
 exports.__esModule = true;
@@ -5830,7 +6253,7 @@ exports['default'] = function (instance) {
 module.exports = exports['default'];
 
 
-},{"../utils":33}],26:[function(require,module,exports){
+},{"../utils":36}],29:[function(require,module,exports){
 'use strict';
 
 exports.__esModule = true;
@@ -5858,7 +6281,7 @@ exports['default'] = function (instance) {
 module.exports = exports['default'];
 
 
-},{}],27:[function(require,module,exports){
+},{}],30:[function(require,module,exports){
 'use strict';
 
 exports.__esModule = true;
@@ -5872,7 +6295,7 @@ exports['default'] = function (instance) {
 module.exports = exports['default'];
 
 
-},{}],28:[function(require,module,exports){
+},{}],31:[function(require,module,exports){
 'use strict';
 
 exports.__esModule = true;
@@ -5907,7 +6330,7 @@ exports['default'] = function (instance) {
 module.exports = exports['default'];
 
 
-},{"../utils":33}],29:[function(require,module,exports){
+},{"../utils":36}],32:[function(require,module,exports){
 'use strict';
 
 exports.__esModule = true;
@@ -5956,7 +6379,7 @@ exports['default'] = logger;
 module.exports = exports['default'];
 
 
-},{"./utils":33}],30:[function(require,module,exports){
+},{"./utils":36}],33:[function(require,module,exports){
 (function (global){
 /* global window */
 'use strict';
@@ -5980,7 +6403,7 @@ module.exports = exports['default'];
 
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],31:[function(require,module,exports){
+},{}],34:[function(require,module,exports){
 'use strict';
 
 exports.__esModule = true;
@@ -6128,6 +6551,8 @@ function template(templateSpec, env) {
 
       return obj;
     },
+    // An empty object to use as replacement for null-contexts
+    nullContext: Object.seal({}),
 
     noop: env.VM.noop,
     compilerInfo: templateSpec.compiler
@@ -6195,7 +6620,7 @@ function wrapProgram(container, i, fn, data, declaredBlockParams, blockParams, d
     var options = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
 
     var currentDepths = depths;
-    if (depths && context != depths[0]) {
+    if (depths && context != depths[0] && !(context === container.nullContext && depths[0] === null)) {
       currentDepths = [context].concat(depths);
     }
 
@@ -6213,12 +6638,7 @@ function wrapProgram(container, i, fn, data, declaredBlockParams, blockParams, d
 function resolvePartial(partial, context, options) {
   if (!partial) {
     if (options.name === '@partial-block') {
-      var data = options.data;
-      while (data['partial-block'] === noop) {
-        data = data._parent;
-      }
-      partial = data['partial-block'];
-      data['partial-block'] = noop;
+      partial = options.data['partial-block'];
     } else {
       partial = options.partials[options.name];
     }
@@ -6231,6 +6651,8 @@ function resolvePartial(partial, context, options) {
 }
 
 function invokePartial(partial, context, options) {
+  // Use the current closure context to save the partial-block if this partial
+  var currentPartialBlock = options.data && options.data['partial-block'];
   options.partial = true;
   if (options.ids) {
     options.data.contextPath = options.ids[0] || options.data.contextPath;
@@ -6238,12 +6660,23 @@ function invokePartial(partial, context, options) {
 
   var partialBlock = undefined;
   if (options.fn && options.fn !== noop) {
-    options.data = _base.createFrame(options.data);
-    partialBlock = options.data['partial-block'] = options.fn;
+    (function () {
+      options.data = _base.createFrame(options.data);
+      // Wrapper function to get access to currentPartialBlock from the closure
+      var fn = options.fn;
+      partialBlock = options.data['partial-block'] = function partialBlockWrapper(context) {
+        var options = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
 
-    if (partialBlock.partials) {
-      options.partials = Utils.extend({}, options.partials, partialBlock.partials);
-    }
+        // Restore the partial-block from the closure for the execution of the block
+        // i.e. the part inside the block of the partial call.
+        options.data = _base.createFrame(options.data);
+        options.data['partial-block'] = currentPartialBlock;
+        return fn(context, options);
+      };
+      if (fn.partials) {
+        options.partials = Utils.extend({}, options.partials, fn.partials);
+      }
+    })();
   }
 
   if (partial === undefined && partialBlock) {
@@ -6279,7 +6712,7 @@ function executeDecorators(fn, prog, container, depths, data, blockParams) {
 }
 
 
-},{"./base":7,"./exception":20,"./utils":33}],32:[function(require,module,exports){
+},{"./base":10,"./exception":23,"./utils":36}],35:[function(require,module,exports){
 // Build out our basic SafeString type
 'use strict';
 
@@ -6296,7 +6729,7 @@ exports['default'] = SafeString;
 module.exports = exports['default'];
 
 
-},{}],33:[function(require,module,exports){
+},{}],36:[function(require,module,exports){
 'use strict';
 
 exports.__esModule = true;
@@ -6422,7 +6855,7 @@ function appendContextPath(contextPath, id) {
 }
 
 
-},{}],34:[function(require,module,exports){
+},{}],37:[function(require,module,exports){
 // USAGE:
 // var handlebars = require('handlebars');
 /* eslint-disable no-var */
@@ -6449,1467 +6882,7 @@ if (typeof require !== 'undefined' && require.extensions) {
   require.extensions['.hbs'] = extension;
 }
 
-},{"../dist/cjs/handlebars":5,"../dist/cjs/handlebars/compiler/printer":15,"fs":63}],35:[function(require,module,exports){
-// Create a simple path alias to allow browserify to resolve
-// the runtime on a supported path.
-module.exports = require('./dist/cjs/handlebars.runtime')['default'];
-
-},{"./dist/cjs/handlebars.runtime":6}],36:[function(require,module,exports){
-'use strict';
-
-Object.defineProperty(exports, "__esModule", {
-    value: true
-});
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-require('whatwg-fetch');
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-require('es6-promise').polyfill(); // needed for fetch
-
-var Handlebars = require('handlebars');
-/**
- * Makes sure that a path is converted to an array.
- * @param paths
- * @returns {*}
- */
-var ensurePathArray = function ensurePathArray(paths) {
-    if (!paths) {
-        paths = [];
-    } else if (typeof paths === 'string') {
-        paths = [paths];
-    }
-    return paths;
-};
-
-/**
- The Resource Manager.
- @class ResourceManager
- @description Represents a manager that loads any CSS and Javascript Resources on the fly.
- */
-
-var ResourceManager = function () {
-
-    /**
-     * Upon initialization.
-     * @memberOf ResourceManager
-     */
-    function ResourceManager() {
-        _classCallCheck(this, ResourceManager);
-
-        this._head = document.getElementsByTagName('head')[0];
-        this._cssPaths = {};
-        this._scriptMaps = {};
-        this._dataPromises = {};
-    }
-
-    /**
-     * Loads a javascript file.
-     * @param {string|Array} paths - The path to the view's js file
-     * @memberOf ResourceManager
-     * @return {Promise} Returns a promise that resolves when all scripts have been loaded
-     */
-
-
-    _createClass(ResourceManager, [{
-        key: 'loadScript',
-        value: function loadScript(paths) {
-            var script,
-                map,
-                loadPromises = [];
-            paths = ensurePathArray(paths);
-            paths.forEach(function (path) {
-                map = this._scriptMaps[path] = this._scriptMaps[path] || {};
-                if (!map.promise) {
-                    map.path = path;
-                    map.promise = new Promise(function (resolve) {
-                        script = this.createScriptElement();
-                        script.setAttribute('type', 'text/javascript');
-                        script.src = path;
-                        script.addEventListener('load', resolve);
-                        this._head.appendChild(script);
-                    }.bind(this));
-                }
-                loadPromises.push(map.promise);
-            }.bind(this));
-            return Promise.all(loadPromises);
-        }
-
-        /**
-         * Removes a script that has the specified path from the head of the document.
-         * @param {string|Array} paths - The paths of the scripts to unload
-         * @memberOf ResourceManager
-         */
-
-    }, {
-        key: 'unloadScript',
-        value: function unloadScript(paths) {
-            var file;
-            return new Promise(function (resolve) {
-                paths = ensurePathArray(paths);
-                paths.forEach(function (path) {
-                    file = this._head.querySelectorAll('script[src="' + path + '"]')[0];
-                    if (file) {
-                        this._head.removeChild(file);
-                        delete this._scriptMaps[path];
-                    }
-                }.bind(this));
-                resolve();
-            }.bind(this));
-        }
-
-        /**
-         * Creates a new script element.
-         * @returns {HTMLElement}
-         */
-
-    }, {
-        key: 'createScriptElement',
-        value: function createScriptElement() {
-            return document.createElement('script');
-        }
-
-        /**
-         * Makes a request to get data and caches it.
-         * @param {string} url - The url to fetch data from
-         * @param [reqOptions] - options to be passed to fetch call
-         * @returns {*}
-         */
-
-    }, {
-        key: 'fetchData',
-        value: function fetchData(url) {
-            var _this = this;
-
-            var reqOptions = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
-
-            var cacheId = url + JSON.stringify(reqOptions);
-
-            reqOptions.cache = reqOptions.cache === undefined ? true : reqOptions.cache;
-
-            if (!url) {
-                return Promise.resolve();
-            }
-            if (!this._dataPromises[cacheId] || !reqOptions.cache) {
-                this._dataPromises[cacheId] = fetch(url, reqOptions).catch(function (e) {
-                    // if failure, remove cache so that subsequent
-                    // requests will trigger new ajax call
-                    _this._dataPromises[cacheId] = null;
-                    throw e;
-                });
-            }
-            return this._dataPromises[cacheId];
-        }
-
-        /**
-         * Loads css files.
-         * @param {Array|String} paths - An array of css paths files to load
-         * @memberOf ResourceManager
-         * @return {Promise}
-         */
-
-    }, {
-        key: 'loadCss',
-        value: function loadCss(paths) {
-            return new Promise(function (resolve) {
-                paths = ensurePathArray(paths);
-                paths.forEach(function (path) {
-                    // TODO: figure out a way to find out when css is guaranteed to be loaded,
-                    // and make this return a truely asynchronous promise
-                    if (!this._cssPaths[path]) {
-                        var el = document.createElement('link');
-                        el.setAttribute('rel', 'stylesheet');
-                        el.setAttribute('href', path);
-                        this._head.appendChild(el);
-                        this._cssPaths[path] = el;
-                    }
-                }.bind(this));
-                resolve();
-            }.bind(this));
-        }
-
-        /**
-         * Unloads css paths.
-         * @param {string|Array} paths - The css paths to unload
-         * @memberOf ResourceManager
-         * @return {Promise}
-         */
-
-    }, {
-        key: 'unloadCss',
-        value: function unloadCss(paths) {
-            var el;
-            return new Promise(function (resolve) {
-                paths = ensurePathArray(paths);
-                paths.forEach(function (path) {
-                    el = this._cssPaths[path];
-                    if (el) {
-                        this._head.removeChild(el);
-                        this._cssPaths[path] = null;
-                    }
-                }.bind(this));
-                resolve();
-            }.bind(this));
-        }
-
-        /**
-         * Parses a template into a DOM element, then returns element back to you.
-         * @param {string} path - The path to the template
-         * @param {HTMLElement} [el] - The element to attach template to
-         * @param {Object|Array} [hbsData] - The data to use for the handlebar template (if applicable)
-         * @returns {Promise} Returns a promise that resolves with contents of template file
-         */
-
-    }, {
-        key: 'loadTemplate',
-        value: function loadTemplate(path, el, hbsData) {
-
-            var isHandlebarFile = function isHandlebarFile(filePath) {
-                if (filePath) {
-                    var frags = filePath.split('.');
-                    var ext = frags[frags.length - 1];
-                    return ext === 'hbs';
-                }
-            };
-
-            if (!path) {
-                return Promise.resolve();
-            }
-
-            return fetch(path).then(function (resp) {
-                return resp.text().then(function (contents) {
-                    if (isHandlebarFile(path)) {
-                        contents = Handlebars.compile(contents)(hbsData || {});
-                    }
-                    if (el) {
-                        el.innerHTML = contents;
-                        contents = el;
-                    }
-                    return contents;
-                });
-            });
-        }
-
-        /**
-         * Removes all cached resources.
-         * @memberOf ResourceManager
-         */
-
-    }, {
-        key: 'flush',
-        value: function flush() {
-            this.unloadCss(Object.getOwnPropertyNames(this._cssPaths));
-            this._cssPaths = {};
-            for (var s in this._scriptMaps) {
-                if (this._scriptMaps.hasOwnProperty(s)) {
-                    var map = this._scriptMaps[s];
-                    this.unloadScript(map.path);
-                }
-            }
-            this._scriptMaps = {};
-            this._dataPromises = {};
-        }
-    }]);
-
-    return ResourceManager;
-}();
-
-exports.default = new ResourceManager();
-
-},{"es6-promise":4,"handlebars":34,"whatwg-fetch":57}],37:[function(require,module,exports){
-'use strict';
-
-Object.defineProperty(exports, "__esModule", {
-    value: true
-});
-
-var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-var _resourceManagerJs = require('resource-manager-js');
-
-var _resourceManagerJs2 = _interopRequireDefault(_resourceManagerJs);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-var Promise = require('es6-promise').Promise;
-var runtime = require('handlebars/runtime');
-
-/**
- * Takes a value and separates the number and unit into a key/value map.
- * @param v - The value
- * @returns {{num: Number, unit: string}} Returns the map
- * @private
- */
-var getCssPropUnitMap = function getCssPropUnitMap(v) {
-    v.trim();
-    var num = v.match('[0-9\.]+'),
-        unit = 'ms';
-
-    num = num ? num[0] : '';
-    if (num) {
-        unit = v.split(num)[1];
-        num = Number(num);
-    }
-    return {
-        num: num,
-        unit: unit
-    };
-};
-
-/**
- * Converts a css timing unit value into milliseconds.
- * @param {string} val - The value string
- * @returns {string} Returns the timing unit value in milliseconds
- */
-var convertCssTimeValueToMilliseconds = function convertCssTimeValueToMilliseconds(val) {
-    var number = getCssPropUnitMap(val).num,
-        unit = val.replace(number, '');
-    if (unit === 's') {
-        val = number * 1000;
-    } else {
-        val = number;
-    }
-    return val + 'ms';
-};
-
-/**
- * Takes a css property name and returns the javascript version of it.
- * @param {string} cssProp - The css property
- * @returns {string} Returns the javascript version
- * @private
- */
-var getJsPropName = function getJsPropName(cssProp) {
-    // convert to camelCase
-    return cssProp.replace(/-([a-z])/g, function (letter) {
-        return letter[1].toUpperCase();
-    });
-};
-
-/**
- * Bubbles up each parent node of the element, triggering the callback on each element until traversal
- * either runs out of parent nodes, reaches the document element, or if callback returns a falsy value
- * @param {Function} callback - A callback that fires which gets passed the current element
- * @param {HTMLElement} [startEl] - The element where traversal will begin (including the passed element), defaults to current el
- */
-var traverseEachParent = function traverseEachParent(callback, startEl) {
-    var parentNode = startEl;
-    var predicate = null;
-    // check if the node has classname property, if not, we know we're at the #document element
-    while (parentNode && typeof parentNode.className === 'string') {
-        predicate = callback(parentNode);
-        if (predicate !== undefined && !predicate) {
-            break;
-        }
-        parentNode = parentNode.parentNode;
-    }
-};
-
-/**
- * A function that fires when the module's load() method is called
- * @callback Module~onLoad
- * @return {*} May return a promise when done
- */
-
-/**
- * A function that fires when the module's show() method is called
- * which can be overridden by subclass custom implementations.
- * @callback Module~onShow
- * @return {*} May return a promise when done
- */
-
-/**
- * A function that fires when the module's hide() method is called
- * which can be overridden by subclass custom implementations.
- * @callback Module~onHide
- */
-
-/**
- * A function that fires when the module's enable() method is called
- * @callback Module~onEnable
- */
-
-/**
- * A function that fires when the module's disable() method is called
- * @callback Module~onDisable
- */
-
-/**
- * A function that fires when the error() method is called
- * @callback Module~onError
- * @param {Object} [e] - The error object that was triggered
- */
-
-/**
- * @class Module
- * @description Base class that represents all modules of an App.
- */
-
-var Module = function () {
-
-    /**
-     * Initialization.
-     * @param {HTMLElement} el - The module element
-     * @param {Object} [options] - An object of options
-     * @param {string} [options.loadedClass] - The class that will be applied to the module element when it is loaded
-     * @param {string} [options.activeClass] - The class that will be applied to the module element when it is shown
-     * @param {string} [options.disabledClass] - The class that will be applied to the module element when disabled
-     * @param {string} [options.errorClass] - The class that will be applied to the module element when it has a load error
-     * @param {Array|string} [options.styles] - Array of stylesheet urls or single url
-     * @param {string|HTMLTemplateElement|HTMLElement} [options.template] - The template to load (can be url to html or handlebars file or html template, just an element, or an html string)
-     * @param {Object|string} [options.data] - The data or url to the module's data
-     * @param {Object} [options.requestOptions] - The request options to use when running the fetch method to get data
-     * @param {Module~onLoad} [options.onLoad] - A function that fires when module's load() method is called
-     * @param {Module~onShow} [options.onShow] - A function that fires when module is shown
-     * @param {Module~onHide} [options.onHide] - A function that fires when module is hidden
-     * @param {Module~onEnable} [options.onEnable] - A function that fires when module is enabled
-     * @param {Module~onDisable} [options.onDisable] - A function that fires when module is disabled
-     * @param {Module~onError} [options.onError] - A function that fires when module goes into error state
-     * @param {Object} [options.helpers] - An object containing a mapping of handlebar helper ids (keys) to their functions (values) to use when handlebar compiling
-     */
-    function Module(el, options) {
-        _classCallCheck(this, Module);
-
-        options = options || {};
-
-        if (!el) {
-            console.error("Module error: No element was passed to constructor");
-        }
-
-        this.el = el;
-
-        var defaultOptions = {
-            loadedClass: 'module-loaded',
-            activeClass: 'module-active',
-            disabledClass: 'module-disabled',
-            errorClass: 'module-error',
-            styles: [],
-            template: "",
-            data: null,
-            requestOptions: null,
-            onLoad: function onLoad() {},
-            onShow: function onShow() {},
-            onHide: function onHide() {},
-            onEnable: function onEnable() {},
-            onDisable: function onDisable() {},
-            onError: function onError() {},
-            helpers: {}
-        };
-
-        // we are adding default options to passed custom options
-        // to ensure all expected options exist when instantiating sub classes
-        for (var name in defaultOptions) {
-            if (defaultOptions.hasOwnProperty(name)) {
-                if (!options[name]) {
-                    options[name] = defaultOptions[name];
-                }
-            }
-        }
-
-        this.options = options;
-
-        // setup helpers
-        for (var _name in options.helpers) {
-            if (options.helpers.hasOwnProperty(_name)) {
-                runtime.registerHelper(_name, options.helpers[_name]);
-            }
-        }
-
-        this._handleElementInitialState();
-
-        this.subModules = {};
-        this.active = false;
-        this.loaded = false;
-        this._elChildren = [];
-        this.loadStatus = 'notLoaded';
-    }
-
-    /**
-     * Loads the module's styles, template, and data and applies loaded css classes and state.
-     * @return {Promise}
-     */
-
-
-    _createClass(Module, [{
-        key: 'load',
-        value: function load() {
-            var _this = this;
-
-            if (!this.loaded) {
-                this.loadStatus = 'loading';
-                // load all subModules
-                var loadPromises = [];
-                for (var key in this.subModules) {
-                    if (this.subModules.hasOwnProperty(key)) {
-                        var view = this.subModules[key];
-                        loadPromises.push(view.load());
-                    }
-                }
-                return Promise.all(loadPromises).then(function () {
-                    return _this.getStyles(_this.options.styles).then(function () {
-                        return _this.fetchData(_this.options.data, _this.options.requestOptions).then(function (data) {
-                            return _this.getTemplate(data).then(function (nodes) {
-                                nodes = nodes || [];
-                                var frag = document.createDocumentFragment();
-                                // hold reference to children to remove them later
-                                while (nodes.length) {
-                                    // order matters here so we always start from the first node
-                                    var node = nodes[0];
-                                    _this._elChildren.push(node);
-                                    // appending child changes length of nodes array
-                                    frag.appendChild(node);
-                                }
-                                _this.el.appendChild(frag);
-                                _this.loaded = true;
-                                _this.loadStatus = 'loaded';
-                                if (_this.el) {
-                                    _this.el.classList.add(_this.options.loadedClass);
-                                }
-                                _this.options.onLoad();
-                            });
-                        });
-                    });
-                }).catch(function (e) {
-                    _this.error(e);
-                    // throw error to reject promise
-                    throw e;
-                });
-            } else {
-                return Promise.resolve();
-            }
-        }
-
-        /**
-         * Makes a request to get the data for the module.
-         * @param {string|Object} url - The url to fetch data from or data object
-         * @param [options] - fetch options
-         * @returns {*}
-         */
-
-    }, {
-        key: 'fetchData',
-        value: function fetchData(url, options) {
-            if (typeof url !== 'string') {
-                return Promise.resolve(url);
-            }
-            return _resourceManagerJs2.default.fetchData(url, options);
-        }
-
-        /**
-         * Gets the css files for the module.
-         * @param cssUrl
-         * @return {Promise}
-         */
-
-    }, {
-        key: 'getStyles',
-        value: function getStyles(cssUrl) {
-            return _resourceManagerJs2.default.loadCss(cssUrl);
-        }
-
-        /**
-         * Gets the html template for the module.
-         * @param {Object} [data] - The data to inject (if template is a handlebar file)
-         * @returns {Promise} Returns a document fragment containing the contents of the template with the data injected
-         */
-
-    }, {
-        key: 'getTemplate',
-        value: function getTemplate(data) {
-            var template = this.options.template || '';
-
-            if (!template) {
-                return Promise.resolve();
-            }
-
-            var isHandlebarFile = function isHandlebarFile(filePath) {
-                if (filePath) {
-                    var frags = filePath.split('.');
-                    var ext = frags[frags.length - 1];
-                    return ext === 'hbs';
-                }
-            };
-
-            if (this._isHTMLTemplate(template)) {
-                // template element
-                // TODO: update to accommodate situations where the user wants to adoptNode instead of cloning it
-                var tpl = document.importNode(template.content, true);
-                return Promise.resolve(tpl.childNodes);
-            } else if (template instanceof HTMLElement) {
-                // already an html element
-                var frag = document.createDocumentFragment();
-                frag.appendChild(template);
-                return Promise.resolve(frag.childNodes);
-            } else {
-                var _ret = function () {
-                    // html or handlebar file
-                    var tempDiv = document.createElement('div');
-                    return {
-                        v: _resourceManagerJs2.default.loadTemplate(template, tempDiv, data).then(function (html) {
-                            return tempDiv.childNodes;
-                        })
-                    };
-                }();
-
-                if ((typeof _ret === 'undefined' ? 'undefined' : _typeof(_ret)) === "object") return _ret.v;
-            }
-        }
-
-        /**
-         * Checks if the provided template argument is indeed an html template element.
-         * This is mainly for testing purposes where phantom is not aware of HTMLTemplateElement
-         * @param template
-         * @returns {boolean}
-         * @private
-         */
-
-    }, {
-        key: '_isHTMLTemplate',
-        value: function _isHTMLTemplate(template) {
-            return template instanceof HTMLTemplateElement;
-        }
-
-        /**
-         * Triggers a load error on the module.
-         * @param {Object} [err] - The error object to trigger
-         * @return {Promise} Returns a promise when erroring operation is complete
-         */
-
-    }, {
-        key: 'error',
-        value: function error(err) {
-            var e = err || new Error();
-
-            this.el.classList.add(this.options.errorClass);
-
-            this.errored = true;
-            this.loaded = false;
-            this.loadStatus = 'notLoaded';
-
-            this.options.onError(e);
-            return this.waitForTransition().then(function () {
-                return e;
-            });
-        }
-
-        /**
-         * Enables the module.
-         * @return {Promise}
-         */
-
-    }, {
-        key: 'enable',
-        value: function enable() {
-            var el = this.el;
-            if (el) {
-                el.classList.remove(this.options.disabledClass);
-            }
-            this.disabled = false;
-            this.options.onEnable();
-            return this.waitForTransition();
-        }
-
-        /**
-         * Disables the module.
-         * @return {Promise}
-         */
-
-    }, {
-        key: 'disable',
-        value: function disable() {
-            var el = this.el;
-            if (el) {
-                el.classList.add(this.options.disabledClass);
-            }
-            this.disabled = true;
-
-            this.options.onDisable();
-            return this.waitForTransition();
-        }
-
-        /**
-         * Shows the module.
-         * @return {Promise}
-         */
-
-    }, {
-        key: 'show',
-        value: function show() {
-            var el = this.el;
-            if (el) {
-                el.classList.add(this.options.activeClass);
-            }
-            this.active = true;
-            this.options.onShow();
-            return this.waitForTransition();
-        }
-
-        /**
-         * Hides the module.
-         * @return {Promise}
-         */
-
-    }, {
-        key: 'hide',
-        value: function hide() {
-            var el = this.el;
-            if (el) {
-                el.classList.remove(this.options.activeClass);
-            }
-            this.active = false;
-            this.options.onHide();
-            return this.waitForTransition();
-        }
-
-        /**
-         * Sets up element internally by evaluating its initial state.
-         * @private
-         */
-
-    }, {
-        key: '_handleElementInitialState',
-        value: function _handleElementInitialState() {
-            var el = this.el;
-            if (!el) {
-                return;
-            }
-            if (el.classList.contains(this.options.disabledClass)) {
-                this._origDisabled = true;
-                this.disable();
-            }
-
-            if (el.classList.contains(this.options.errorClass)) {
-                this._origError = true;
-                this.error(new Error());
-            }
-        }
-
-        /**
-         * Restores the elements classes back to the way they were before instantiation.
-         * @private
-         */
-
-    }, {
-        key: '_resetElementInitialState',
-        value: function _resetElementInitialState() {
-            var options = this.options,
-                disabledClass = options.disabledClass,
-                errorClass = options.errorClass;
-
-            if (!this.el) {
-                return;
-            }
-            if (this._origDisabled) {
-                this.el.classList.add(disabledClass);
-            } else {
-                this.el.classList.remove(disabledClass);
-            }
-
-            if (!this._origError) {
-                this.el.classList.remove(errorClass);
-            } else {
-                this.el.classList.add(errorClass);
-            }
-        }
-
-        /**
-         * Builds a transition promise that waits to resolve until the module el's CSS transition is completed (if applicable).
-         * @returns {Promise} Returns a promise that resolves when the element has finished animating
-         */
-
-    }, {
-        key: 'waitForTransition',
-        value: function waitForTransition() {
-            var _this2 = this;
-
-            var duration = this.getTransitionDuration();
-            return new Promise(function (resolve) {
-                if (duration > 0) {
-                    setTimeout(resolve.bind(_this2, _this2.el), duration);
-                } else {
-                    resolve(_this2.el);
-                }
-            });
-        }
-
-        /**
-         * Gets the time is takes for the element to transition to its show state.
-         * @returns {Number} Returns the total CSS transition time in milliseconds
-         */
-
-    }, {
-        key: 'getTransitionDuration',
-        value: function getTransitionDuration() {
-            var delayProp = this.getCssComputedProperty('transition-delay') || '0ms',
-                durationProp = this.getCssComputedProperty('transition-duration') || '0ms',
-                times = Array.isArray(durationProp) ? durationProp : [durationProp],
-                delay = Array.isArray(delayProp) ? delayProp : [delayProp],
-                highest = 0,
-                map;
-
-            times.push.apply(times, delay); // account for delay
-
-            // calculate highest number of time
-            times.forEach(function (value) {
-                value.split(',').forEach(function (v) {
-                    v = convertCssTimeValueToMilliseconds(v);
-                    map = getCssPropUnitMap(v);
-                    if (map.num > highest) {
-                        highest = map.num;
-                    }
-                });
-            });
-
-            return highest;
-        }
-
-        /**
-         * Gets the computed property of the element.
-         * @param {string} prop - The name of the property to get
-         * @returns {string} Returns the value of the property
-         */
-
-    }, {
-        key: 'getCssComputedProperty',
-        value: function getCssComputedProperty(prop) {
-            var style = window.getComputedStyle(this.el);
-            return style.getPropertyValue(prop) || this.el.style[getJsPropName(prop)];
-        }
-
-        /**
-         * Gets the closest ancestor element that has a css class.
-         * @param {string} className - The class name that the ancestor must have to match
-         * @param {Element} startTarget - The element the method should start from
-         */
-
-    }, {
-        key: 'getClosestAncestorElementByClassName',
-        value: function getClosestAncestorElementByClassName(className, startTarget) {
-            var result = null;
-            traverseEachParent(function (parent) {
-                if (parent.classList.contains(className)) {
-                    result = parent;
-                    return false;
-                }
-            }, startTarget || this.el.parentNode || this.el);
-            return result;
-        }
-
-        /**
-         * Destroys all nested views and cleans up.
-         */
-
-    }, {
-        key: 'destroy',
-        value: function destroy() {
-            var _this3 = this;
-
-            var subModules = this.subModules;
-
-            for (var key in subModules) {
-                if (subModules.hasOwnProperty(key) && subModules[key]) {
-                    subModules[key].destroy();
-                }
-            }
-            this.subModules = {};
-            this.active = false;
-            this.loaded = false;
-            this.errored = false;
-            this.loadStatus = 'notLoaded';
-
-            this.el.classList.remove(this.options.loadedClass);
-            this.el.classList.remove(this.options.activeClass);
-
-            this._resetElementInitialState();
-
-            this._elChildren.forEach(function (el) {
-                if (_this3.el.contains(el)) {
-                    _this3.el.removeChild(el);
-                }
-            });
-            this._elChildren = [];
-        }
-    }]);
-
-    return Module;
-}();
-
-exports.default = Module;
-
-},{"es6-promise":4,"handlebars/runtime":35,"resource-manager-js":36}],38:[function(require,module,exports){
-'use strict';
-
-module.exports = require('./lib')
-
-},{"./lib":43}],39:[function(require,module,exports){
-'use strict';
-
-var asap = require('asap/raw');
-
-function noop() {}
-
-// States:
-//
-// 0 - pending
-// 1 - fulfilled with _value
-// 2 - rejected with _value
-// 3 - adopted the state of another promise, _value
-//
-// once the state is no longer pending (0) it is immutable
-
-// All `_` prefixed properties will be reduced to `_{random number}`
-// at build time to obfuscate them and discourage their use.
-// We don't use symbols or Object.defineProperty to fully hide them
-// because the performance isn't good enough.
-
-
-// to avoid using try/catch inside critical functions, we
-// extract them to here.
-var LAST_ERROR = null;
-var IS_ERROR = {};
-function getThen(obj) {
-  try {
-    return obj.then;
-  } catch (ex) {
-    LAST_ERROR = ex;
-    return IS_ERROR;
-  }
-}
-
-function tryCallOne(fn, a) {
-  try {
-    return fn(a);
-  } catch (ex) {
-    LAST_ERROR = ex;
-    return IS_ERROR;
-  }
-}
-function tryCallTwo(fn, a, b) {
-  try {
-    fn(a, b);
-  } catch (ex) {
-    LAST_ERROR = ex;
-    return IS_ERROR;
-  }
-}
-
-module.exports = Promise;
-
-function Promise(fn) {
-  if (typeof this !== 'object') {
-    throw new TypeError('Promises must be constructed via new');
-  }
-  if (typeof fn !== 'function') {
-    throw new TypeError('not a function');
-  }
-  this._45 = 0;
-  this._81 = 0;
-  this._65 = null;
-  this._54 = null;
-  if (fn === noop) return;
-  doResolve(fn, this);
-}
-Promise._10 = null;
-Promise._97 = null;
-Promise._61 = noop;
-
-Promise.prototype.then = function(onFulfilled, onRejected) {
-  if (this.constructor !== Promise) {
-    return safeThen(this, onFulfilled, onRejected);
-  }
-  var res = new Promise(noop);
-  handle(this, new Handler(onFulfilled, onRejected, res));
-  return res;
-};
-
-function safeThen(self, onFulfilled, onRejected) {
-  return new self.constructor(function (resolve, reject) {
-    var res = new Promise(noop);
-    res.then(resolve, reject);
-    handle(self, new Handler(onFulfilled, onRejected, res));
-  });
-};
-function handle(self, deferred) {
-  while (self._81 === 3) {
-    self = self._65;
-  }
-  if (Promise._10) {
-    Promise._10(self);
-  }
-  if (self._81 === 0) {
-    if (self._45 === 0) {
-      self._45 = 1;
-      self._54 = deferred;
-      return;
-    }
-    if (self._45 === 1) {
-      self._45 = 2;
-      self._54 = [self._54, deferred];
-      return;
-    }
-    self._54.push(deferred);
-    return;
-  }
-  handleResolved(self, deferred);
-}
-
-function handleResolved(self, deferred) {
-  asap(function() {
-    var cb = self._81 === 1 ? deferred.onFulfilled : deferred.onRejected;
-    if (cb === null) {
-      if (self._81 === 1) {
-        resolve(deferred.promise, self._65);
-      } else {
-        reject(deferred.promise, self._65);
-      }
-      return;
-    }
-    var ret = tryCallOne(cb, self._65);
-    if (ret === IS_ERROR) {
-      reject(deferred.promise, LAST_ERROR);
-    } else {
-      resolve(deferred.promise, ret);
-    }
-  });
-}
-function resolve(self, newValue) {
-  // Promise Resolution Procedure: https://github.com/promises-aplus/promises-spec#the-promise-resolution-procedure
-  if (newValue === self) {
-    return reject(
-      self,
-      new TypeError('A promise cannot be resolved with itself.')
-    );
-  }
-  if (
-    newValue &&
-    (typeof newValue === 'object' || typeof newValue === 'function')
-  ) {
-    var then = getThen(newValue);
-    if (then === IS_ERROR) {
-      return reject(self, LAST_ERROR);
-    }
-    if (
-      then === self.then &&
-      newValue instanceof Promise
-    ) {
-      self._81 = 3;
-      self._65 = newValue;
-      finale(self);
-      return;
-    } else if (typeof then === 'function') {
-      doResolve(then.bind(newValue), self);
-      return;
-    }
-  }
-  self._81 = 1;
-  self._65 = newValue;
-  finale(self);
-}
-
-function reject(self, newValue) {
-  self._81 = 2;
-  self._65 = newValue;
-  if (Promise._97) {
-    Promise._97(self, newValue);
-  }
-  finale(self);
-}
-function finale(self) {
-  if (self._45 === 1) {
-    handle(self, self._54);
-    self._54 = null;
-  }
-  if (self._45 === 2) {
-    for (var i = 0; i < self._54.length; i++) {
-      handle(self, self._54[i]);
-    }
-    self._54 = null;
-  }
-}
-
-function Handler(onFulfilled, onRejected, promise){
-  this.onFulfilled = typeof onFulfilled === 'function' ? onFulfilled : null;
-  this.onRejected = typeof onRejected === 'function' ? onRejected : null;
-  this.promise = promise;
-}
-
-/**
- * Take a potentially misbehaving resolver function and make sure
- * onFulfilled and onRejected are only called once.
- *
- * Makes no guarantees about asynchrony.
- */
-function doResolve(fn, promise) {
-  var done = false;
-  var res = tryCallTwo(fn, function (value) {
-    if (done) return;
-    done = true;
-    resolve(promise, value);
-  }, function (reason) {
-    if (done) return;
-    done = true;
-    reject(promise, reason);
-  })
-  if (!done && res === IS_ERROR) {
-    done = true;
-    reject(promise, LAST_ERROR);
-  }
-}
-
-},{"asap/raw":3}],40:[function(require,module,exports){
-'use strict';
-
-var Promise = require('./core.js');
-
-module.exports = Promise;
-Promise.prototype.done = function (onFulfilled, onRejected) {
-  var self = arguments.length ? this.then.apply(this, arguments) : this;
-  self.then(null, function (err) {
-    setTimeout(function () {
-      throw err;
-    }, 0);
-  });
-};
-
-},{"./core.js":39}],41:[function(require,module,exports){
-'use strict';
-
-//This file contains the ES6 extensions to the core Promises/A+ API
-
-var Promise = require('./core.js');
-
-module.exports = Promise;
-
-/* Static Functions */
-
-var TRUE = valuePromise(true);
-var FALSE = valuePromise(false);
-var NULL = valuePromise(null);
-var UNDEFINED = valuePromise(undefined);
-var ZERO = valuePromise(0);
-var EMPTYSTRING = valuePromise('');
-
-function valuePromise(value) {
-  var p = new Promise(Promise._61);
-  p._81 = 1;
-  p._65 = value;
-  return p;
-}
-Promise.resolve = function (value) {
-  if (value instanceof Promise) return value;
-
-  if (value === null) return NULL;
-  if (value === undefined) return UNDEFINED;
-  if (value === true) return TRUE;
-  if (value === false) return FALSE;
-  if (value === 0) return ZERO;
-  if (value === '') return EMPTYSTRING;
-
-  if (typeof value === 'object' || typeof value === 'function') {
-    try {
-      var then = value.then;
-      if (typeof then === 'function') {
-        return new Promise(then.bind(value));
-      }
-    } catch (ex) {
-      return new Promise(function (resolve, reject) {
-        reject(ex);
-      });
-    }
-  }
-  return valuePromise(value);
-};
-
-Promise.all = function (arr) {
-  var args = Array.prototype.slice.call(arr);
-
-  return new Promise(function (resolve, reject) {
-    if (args.length === 0) return resolve([]);
-    var remaining = args.length;
-    function res(i, val) {
-      if (val && (typeof val === 'object' || typeof val === 'function')) {
-        if (val instanceof Promise && val.then === Promise.prototype.then) {
-          while (val._81 === 3) {
-            val = val._65;
-          }
-          if (val._81 === 1) return res(i, val._65);
-          if (val._81 === 2) reject(val._65);
-          val.then(function (val) {
-            res(i, val);
-          }, reject);
-          return;
-        } else {
-          var then = val.then;
-          if (typeof then === 'function') {
-            var p = new Promise(then.bind(val));
-            p.then(function (val) {
-              res(i, val);
-            }, reject);
-            return;
-          }
-        }
-      }
-      args[i] = val;
-      if (--remaining === 0) {
-        resolve(args);
-      }
-    }
-    for (var i = 0; i < args.length; i++) {
-      res(i, args[i]);
-    }
-  });
-};
-
-Promise.reject = function (value) {
-  return new Promise(function (resolve, reject) {
-    reject(value);
-  });
-};
-
-Promise.race = function (values) {
-  return new Promise(function (resolve, reject) {
-    values.forEach(function(value){
-      Promise.resolve(value).then(resolve, reject);
-    });
-  });
-};
-
-/* Prototype Methods */
-
-Promise.prototype['catch'] = function (onRejected) {
-  return this.then(null, onRejected);
-};
-
-},{"./core.js":39}],42:[function(require,module,exports){
-'use strict';
-
-var Promise = require('./core.js');
-
-module.exports = Promise;
-Promise.prototype['finally'] = function (f) {
-  return this.then(function (value) {
-    return Promise.resolve(f()).then(function () {
-      return value;
-    });
-  }, function (err) {
-    return Promise.resolve(f()).then(function () {
-      throw err;
-    });
-  });
-};
-
-},{"./core.js":39}],43:[function(require,module,exports){
-'use strict';
-
-module.exports = require('./core.js');
-require('./done.js');
-require('./finally.js');
-require('./es6-extensions.js');
-require('./node-extensions.js');
-require('./synchronous.js');
-
-},{"./core.js":39,"./done.js":40,"./es6-extensions.js":41,"./finally.js":42,"./node-extensions.js":44,"./synchronous.js":45}],44:[function(require,module,exports){
-'use strict';
-
-// This file contains then/promise specific extensions that are only useful
-// for node.js interop
-
-var Promise = require('./core.js');
-var asap = require('asap');
-
-module.exports = Promise;
-
-/* Static Functions */
-
-Promise.denodeify = function (fn, argumentCount) {
-  if (
-    typeof argumentCount === 'number' && argumentCount !== Infinity
-  ) {
-    return denodeifyWithCount(fn, argumentCount);
-  } else {
-    return denodeifyWithoutCount(fn);
-  }
-}
-
-var callbackFn = (
-  'function (err, res) {' +
-  'if (err) { rj(err); } else { rs(res); }' +
-  '}'
-);
-function denodeifyWithCount(fn, argumentCount) {
-  var args = [];
-  for (var i = 0; i < argumentCount; i++) {
-    args.push('a' + i);
-  }
-  var body = [
-    'return function (' + args.join(',') + ') {',
-    'var self = this;',
-    'return new Promise(function (rs, rj) {',
-    'var res = fn.call(',
-    ['self'].concat(args).concat([callbackFn]).join(','),
-    ');',
-    'if (res &&',
-    '(typeof res === "object" || typeof res === "function") &&',
-    'typeof res.then === "function"',
-    ') {rs(res);}',
-    '});',
-    '};'
-  ].join('');
-  return Function(['Promise', 'fn'], body)(Promise, fn);
-}
-function denodeifyWithoutCount(fn) {
-  var fnLength = Math.max(fn.length - 1, 3);
-  var args = [];
-  for (var i = 0; i < fnLength; i++) {
-    args.push('a' + i);
-  }
-  var body = [
-    'return function (' + args.join(',') + ') {',
-    'var self = this;',
-    'var args;',
-    'var argLength = arguments.length;',
-    'if (arguments.length > ' + fnLength + ') {',
-    'args = new Array(arguments.length + 1);',
-    'for (var i = 0; i < arguments.length; i++) {',
-    'args[i] = arguments[i];',
-    '}',
-    '}',
-    'return new Promise(function (rs, rj) {',
-    'var cb = ' + callbackFn + ';',
-    'var res;',
-    'switch (argLength) {',
-    args.concat(['extra']).map(function (_, index) {
-      return (
-        'case ' + (index) + ':' +
-        'res = fn.call(' + ['self'].concat(args.slice(0, index)).concat('cb').join(',') + ');' +
-        'break;'
-      );
-    }).join(''),
-    'default:',
-    'args[argLength] = cb;',
-    'res = fn.apply(self, args);',
-    '}',
-    
-    'if (res &&',
-    '(typeof res === "object" || typeof res === "function") &&',
-    'typeof res.then === "function"',
-    ') {rs(res);}',
-    '});',
-    '};'
-  ].join('');
-
-  return Function(
-    ['Promise', 'fn'],
-    body
-  )(Promise, fn);
-}
-
-Promise.nodeify = function (fn) {
-  return function () {
-    var args = Array.prototype.slice.call(arguments);
-    var callback =
-      typeof args[args.length - 1] === 'function' ? args.pop() : null;
-    var ctx = this;
-    try {
-      return fn.apply(this, arguments).nodeify(callback, ctx);
-    } catch (ex) {
-      if (callback === null || typeof callback == 'undefined') {
-        return new Promise(function (resolve, reject) {
-          reject(ex);
-        });
-      } else {
-        asap(function () {
-          callback.call(ctx, ex);
-        })
-      }
-    }
-  }
-}
-
-Promise.prototype.nodeify = function (callback, ctx) {
-  if (typeof callback != 'function') return this;
-
-  this.then(function (value) {
-    asap(function () {
-      callback.call(ctx, null, value);
-    });
-  }, function (err) {
-    asap(function () {
-      callback.call(ctx, err);
-    });
-  });
-}
-
-},{"./core.js":39,"asap":2}],45:[function(require,module,exports){
-'use strict';
-
-var Promise = require('./core.js');
-
-module.exports = Promise;
-Promise.enableSynchronous = function () {
-  Promise.prototype.isPending = function() {
-    return this.getState() == 0;
-  };
-
-  Promise.prototype.isFulfilled = function() {
-    return this.getState() == 1;
-  };
-
-  Promise.prototype.isRejected = function() {
-    return this.getState() == 2;
-  };
-
-  Promise.prototype.getValue = function () {
-    if (this._81 === 3) {
-      return this._65.getValue();
-    }
-
-    if (!this.isFulfilled()) {
-      throw new Error('Cannot get a value of an unfulfilled promise.');
-    }
-
-    return this._65;
-  };
-
-  Promise.prototype.getReason = function () {
-    if (this._81 === 3) {
-      return this._65.getReason();
-    }
-
-    if (!this.isRejected()) {
-      throw new Error('Cannot get a rejection reason of a non-rejected promise.');
-    }
-
-    return this._65;
-  };
-
-  Promise.prototype.getState = function () {
-    if (this._81 === 3) {
-      return this._65.getState();
-    }
-    if (this._81 === -1 || this._81 === -2) {
-      return 0;
-    }
-
-    return this._81;
-  };
-};
-
-Promise.disableSynchronous = function() {
-  Promise.prototype.isPending = undefined;
-  Promise.prototype.isFulfilled = undefined;
-  Promise.prototype.isRejected = undefined;
-  Promise.prototype.getValue = undefined;
-  Promise.prototype.getReason = undefined;
-  Promise.prototype.getState = undefined;
-};
-
-},{"./core.js":39}],46:[function(require,module,exports){
+},{"../dist/cjs/handlebars":8,"../dist/cjs/handlebars/compiler/printer":18,"fs":1}],38:[function(require,module,exports){
 /*
  * Copyright 2009-2011 Mozilla Foundation and contributors
  * Licensed under the New BSD license. See LICENSE.txt or:
@@ -7919,7 +6892,7 @@ exports.SourceMapGenerator = require('./source-map/source-map-generator').Source
 exports.SourceMapConsumer = require('./source-map/source-map-consumer').SourceMapConsumer;
 exports.SourceNode = require('./source-map/source-node').SourceNode;
 
-},{"./source-map/source-map-consumer":53,"./source-map/source-map-generator":54,"./source-map/source-node":55}],47:[function(require,module,exports){
+},{"./source-map/source-map-consumer":45,"./source-map/source-map-generator":46,"./source-map/source-node":47}],39:[function(require,module,exports){
 /* -*- Mode: js; js-indent-level: 2; -*- */
 /*
  * Copyright 2011 Mozilla Foundation and contributors
@@ -8028,7 +7001,7 @@ define(function (require, exports, module) {
 
 });
 
-},{"./util":56,"amdefine":1}],48:[function(require,module,exports){
+},{"./util":48,"amdefine":4}],40:[function(require,module,exports){
 /* -*- Mode: js; js-indent-level: 2; -*- */
 /*
  * Copyright 2011 Mozilla Foundation and contributors
@@ -8176,7 +7149,7 @@ define(function (require, exports, module) {
 
 });
 
-},{"./base64":49,"amdefine":1}],49:[function(require,module,exports){
+},{"./base64":41,"amdefine":4}],41:[function(require,module,exports){
 /* -*- Mode: js; js-indent-level: 2; -*- */
 /*
  * Copyright 2011 Mozilla Foundation and contributors
@@ -8251,7 +7224,7 @@ define(function (require, exports, module) {
 
 });
 
-},{"amdefine":1}],50:[function(require,module,exports){
+},{"amdefine":4}],42:[function(require,module,exports){
 /* -*- Mode: js; js-indent-level: 2; -*- */
 /*
  * Copyright 2011 Mozilla Foundation and contributors
@@ -8370,7 +7343,7 @@ define(function (require, exports, module) {
 
 });
 
-},{"amdefine":1}],51:[function(require,module,exports){
+},{"amdefine":4}],43:[function(require,module,exports){
 /* -*- Mode: js; js-indent-level: 2; -*- */
 /*
  * Copyright 2014 Mozilla Foundation and contributors
@@ -8458,7 +7431,7 @@ define(function (require, exports, module) {
 
 });
 
-},{"./util":56,"amdefine":1}],52:[function(require,module,exports){
+},{"./util":48,"amdefine":4}],44:[function(require,module,exports){
 /* -*- Mode: js; js-indent-level: 2; -*- */
 /*
  * Copyright 2011 Mozilla Foundation and contributors
@@ -8580,7 +7553,7 @@ define(function (require, exports, module) {
 
 });
 
-},{"amdefine":1}],53:[function(require,module,exports){
+},{"amdefine":4}],45:[function(require,module,exports){
 /* -*- Mode: js; js-indent-level: 2; -*- */
 /*
  * Copyright 2011 Mozilla Foundation and contributors
@@ -9659,7 +8632,7 @@ define(function (require, exports, module) {
 
 });
 
-},{"./array-set":47,"./base64-vlq":48,"./binary-search":50,"./quick-sort":52,"./util":56,"amdefine":1}],54:[function(require,module,exports){
+},{"./array-set":39,"./base64-vlq":40,"./binary-search":42,"./quick-sort":44,"./util":48,"amdefine":4}],46:[function(require,module,exports){
 /* -*- Mode: js; js-indent-level: 2; -*- */
 /*
  * Copyright 2011 Mozilla Foundation and contributors
@@ -10060,7 +9033,7 @@ define(function (require, exports, module) {
 
 });
 
-},{"./array-set":47,"./base64-vlq":48,"./mapping-list":51,"./util":56,"amdefine":1}],55:[function(require,module,exports){
+},{"./array-set":39,"./base64-vlq":40,"./mapping-list":43,"./util":48,"amdefine":4}],47:[function(require,module,exports){
 /* -*- Mode: js; js-indent-level: 2; -*- */
 /*
  * Copyright 2011 Mozilla Foundation and contributors
@@ -10476,7 +9449,7 @@ define(function (require, exports, module) {
 
 });
 
-},{"./source-map-generator":54,"./util":56,"amdefine":1}],56:[function(require,module,exports){
+},{"./source-map-generator":46,"./util":48,"amdefine":4}],48:[function(require,module,exports){
 /* -*- Mode: js; js-indent-level: 2; -*- */
 /*
  * Copyright 2011 Mozilla Foundation and contributors
@@ -10848,7 +9821,276 @@ define(function (require, exports, module) {
 
 });
 
-},{"amdefine":1}],57:[function(require,module,exports){
+},{"amdefine":4}],49:[function(require,module,exports){
+// Create a simple path alias to allow browserify to resolve
+// the runtime on a supported path.
+module.exports = require('./dist/cjs/handlebars.runtime')['default'];
+
+},{"./dist/cjs/handlebars.runtime":9}],50:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+require('whatwg-fetch');
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+require('es6-promise').polyfill(); // needed for fetch
+
+var Handlebars = require('handlebars');
+/**
+ * Makes sure that a path is converted to an array.
+ * @param paths
+ * @returns {*}
+ */
+var ensurePathArray = function ensurePathArray(paths) {
+    if (!paths) {
+        paths = [];
+    } else if (typeof paths === 'string') {
+        paths = [paths];
+    }
+    return paths;
+};
+
+/**
+ The Resource Manager.
+ @class ResourceManager
+ @description Represents a manager that loads any CSS and Javascript Resources on the fly.
+ */
+
+var ResourceManager = function () {
+
+    /**
+     * Upon initialization.
+     * @memberOf ResourceManager
+     */
+    function ResourceManager() {
+        _classCallCheck(this, ResourceManager);
+
+        this._head = document.getElementsByTagName('head')[0];
+        this._cssPaths = {};
+        this._scriptMaps = {};
+        this._dataPromises = {};
+    }
+
+    /**
+     * Loads a javascript file.
+     * @param {string|Array} paths - The path to the view's js file
+     * @memberOf ResourceManager
+     * @return {Promise} Returns a promise that resolves when all scripts have been loaded
+     */
+
+
+    _createClass(ResourceManager, [{
+        key: 'loadScript',
+        value: function loadScript(paths) {
+            var script = void 0,
+                map = void 0,
+                loadPromises = [];
+            paths = ensurePathArray(paths);
+            paths.forEach(function (path) {
+                map = this._scriptMaps[path] = this._scriptMaps[path] || {};
+                if (!map.promise) {
+                    map.path = path;
+                    map.promise = new Promise(function (resolve) {
+                        script = this.createScriptElement();
+                        script.setAttribute('type', 'text/javascript');
+                        script.src = path;
+                        script.addEventListener('load', resolve);
+                        this._head.appendChild(script);
+                    }.bind(this));
+                }
+                loadPromises.push(map.promise);
+            }.bind(this));
+            return Promise.all(loadPromises);
+        }
+
+        /**
+         * Removes a script that has the specified path from the head of the document.
+         * @param {string|Array} paths - The paths of the scripts to unload
+         * @memberOf ResourceManager
+         */
+
+    }, {
+        key: 'unloadScript',
+        value: function unloadScript(paths) {
+            var file = void 0;
+            return new Promise(function (resolve) {
+                paths = ensurePathArray(paths);
+                paths.forEach(function (path) {
+                    file = this._head.querySelectorAll('script[src="' + path + '"]')[0];
+                    if (file) {
+                        this._head.removeChild(file);
+                        delete this._scriptMaps[path];
+                    }
+                }.bind(this));
+                resolve();
+            }.bind(this));
+        }
+
+        /**
+         * Creates a new script element.
+         * @returns {HTMLElement}
+         */
+
+    }, {
+        key: 'createScriptElement',
+        value: function createScriptElement() {
+            return document.createElement('script');
+        }
+
+        /**
+         * Makes a request to get data and caches it.
+         * @param {string} url - The url to fetch data from
+         * @param [reqOptions] - options to be passed to fetch call
+         * @returns {*}
+         */
+
+    }, {
+        key: 'fetchData',
+        value: function fetchData(url) {
+            var _this = this;
+
+            var reqOptions = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+
+            var cacheId = url + JSON.stringify(reqOptions);
+
+            reqOptions.cache = reqOptions.cache === undefined ? true : reqOptions.cache;
+
+            if (!url) {
+                return Promise.resolve();
+            }
+            if (!this._dataPromises[cacheId] || !reqOptions.cache) {
+                this._dataPromises[cacheId] = fetch(url, reqOptions).catch(function (e) {
+                    // if failure, remove cache so that subsequent
+                    // requests will trigger new ajax call
+                    _this._dataPromises[cacheId] = null;
+                    throw e;
+                });
+            }
+            return this._dataPromises[cacheId];
+        }
+
+        /**
+         * Loads css files.
+         * @param {Array|String} paths - An array of css paths files to load
+         * @memberOf ResourceManager
+         * @return {Promise}
+         */
+
+    }, {
+        key: 'loadCss',
+        value: function loadCss(paths) {
+            return new Promise(function (resolve) {
+                paths = ensurePathArray(paths);
+                paths.forEach(function (path) {
+                    // TODO: figure out a way to find out when css is guaranteed to be loaded,
+                    // and make this return a truely asynchronous promise
+                    if (!this._cssPaths[path]) {
+                        var el = document.createElement('link');
+                        el.setAttribute('rel', 'stylesheet');
+                        el.setAttribute('href', path);
+                        this._head.appendChild(el);
+                        this._cssPaths[path] = el;
+                    }
+                }.bind(this));
+                resolve();
+            }.bind(this));
+        }
+
+        /**
+         * Unloads css paths.
+         * @param {string|Array} paths - The css paths to unload
+         * @memberOf ResourceManager
+         * @return {Promise}
+         */
+
+    }, {
+        key: 'unloadCss',
+        value: function unloadCss(paths) {
+            var el = void 0;
+            return new Promise(function (resolve) {
+                paths = ensurePathArray(paths);
+                paths.forEach(function (path) {
+                    el = this._cssPaths[path];
+                    if (el) {
+                        this._head.removeChild(el);
+                        this._cssPaths[path] = null;
+                    }
+                }.bind(this));
+                resolve();
+            }.bind(this));
+        }
+
+        /**
+         * Parses a template into a DOM element, then returns element back to you.
+         * @param {string} path - The path to the template
+         * @param {HTMLElement} [el] - The element to attach template to
+         * @param {Object|Array} [hbsData] - The data to use for the handlebar template (if applicable)
+         * @returns {Promise} Returns a promise that resolves with contents of template file
+         */
+
+    }, {
+        key: 'loadTemplate',
+        value: function loadTemplate(path, el, hbsData) {
+
+            var isHandlebarFile = function isHandlebarFile(filePath) {
+                if (filePath) {
+                    var frags = filePath.split('.');
+                    var ext = frags[frags.length - 1];
+                    return ext === 'hbs';
+                }
+            };
+
+            if (!path) {
+                return Promise.resolve();
+            }
+
+            return fetch(path).then(function (resp) {
+                return resp.text().then(function (contents) {
+                    if (isHandlebarFile(path)) {
+                        contents = Handlebars.compile(contents)(hbsData || {});
+                    }
+                    if (el) {
+                        el.innerHTML = contents;
+                        contents = el;
+                    }
+                    return contents;
+                });
+            });
+        }
+
+        /**
+         * Removes all cached resources.
+         * @memberOf ResourceManager
+         */
+
+    }, {
+        key: 'flush',
+        value: function flush() {
+            this.unloadCss(Object.getOwnPropertyNames(this._cssPaths));
+            this._cssPaths = {};
+            for (var s in this._scriptMaps) {
+                if (this._scriptMaps.hasOwnProperty(s)) {
+                    var map = this._scriptMaps[s];
+                    this.unloadScript(map.path);
+                }
+            }
+            this._scriptMaps = {};
+            this._dataPromises = {};
+        }
+    }]);
+
+    return ResourceManager;
+}();
+
+exports.default = new ResourceManager();
+
+},{"es6-promise":7,"handlebars":37,"whatwg-fetch":51}],51:[function(require,module,exports){
 (function(self) {
   'use strict';
 
@@ -10935,7 +10177,10 @@ define(function (require, exports, module) {
       headers.forEach(function(value, name) {
         this.append(name, value)
       }, this)
-
+    } else if (Array.isArray(headers)) {
+      headers.forEach(function(header) {
+        this.append(header[0], header[1])
+      }, this)
     } else if (headers) {
       Object.getOwnPropertyNames(headers).forEach(function(name) {
         this.append(name, headers[name])
@@ -10946,12 +10191,8 @@ define(function (require, exports, module) {
   Headers.prototype.append = function(name, value) {
     name = normalizeName(name)
     value = normalizeValue(value)
-    var list = this.map[name]
-    if (!list) {
-      list = []
-      this.map[name] = list
-    }
-    list.push(value)
+    var oldValue = this.map[name]
+    this.map[name] = oldValue ? oldValue+','+value : value
   }
 
   Headers.prototype['delete'] = function(name) {
@@ -10959,12 +10200,8 @@ define(function (require, exports, module) {
   }
 
   Headers.prototype.get = function(name) {
-    var values = this.map[normalizeName(name)]
-    return values ? values[0] : null
-  }
-
-  Headers.prototype.getAll = function(name) {
-    return this.map[normalizeName(name)] || []
+    name = normalizeName(name)
+    return this.has(name) ? this.map[name] : null
   }
 
   Headers.prototype.has = function(name) {
@@ -10972,15 +10209,15 @@ define(function (require, exports, module) {
   }
 
   Headers.prototype.set = function(name, value) {
-    this.map[normalizeName(name)] = [normalizeValue(value)]
+    this.map[normalizeName(name)] = normalizeValue(value)
   }
 
   Headers.prototype.forEach = function(callback, thisArg) {
-    Object.getOwnPropertyNames(this.map).forEach(function(name) {
-      this.map[name].forEach(function(value) {
-        callback.call(thisArg, value, name, this)
-      }, this)
-    }, this)
+    for (var name in this.map) {
+      if (this.map.hasOwnProperty(name)) {
+        callback.call(thisArg, this.map[name], name, this)
+      }
+    }
   }
 
   Headers.prototype.keys = function() {
@@ -11162,9 +10399,7 @@ define(function (require, exports, module) {
     options = options || {}
     var body = options.body
 
-    if (typeof input === 'string') {
-      this.url = input
-    } else {
+    if (input instanceof Request) {
       if (input.bodyUsed) {
         throw new TypeError('Already read')
       }
@@ -11179,6 +10414,8 @@ define(function (require, exports, module) {
         body = input._bodyInit
         input.bodyUsed = true
       }
+    } else {
+      this.url = String(input)
     }
 
     this.credentials = options.credentials || this.credentials || 'omit'
@@ -11214,7 +10451,7 @@ define(function (require, exports, module) {
 
   function parseHeaders(rawHeaders) {
     var headers = new Headers()
-    rawHeaders.split('\r\n').forEach(function(line) {
+    rawHeaders.split(/\r?\n/).forEach(function(line) {
       var parts = line.split(':')
       var key = parts.shift().trim()
       if (key) {
@@ -11316,7 +10553,1190 @@ define(function (require, exports, module) {
   self.fetch.polyfill = true
 })(typeof self !== 'undefined' ? self : this);
 
-},{}],58:[function(require,module,exports){
+},{}],52:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _resourceManagerJs = require('resource-manager-js');
+
+var _resourceManagerJs2 = _interopRequireDefault(_resourceManagerJs);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var Promise = require('es6-promise').Promise;
+var runtime = require('handlebars/runtime');
+
+/**
+ * Takes a value and separates the number and unit into a key/value map.
+ * @param v - The value
+ * @returns {{num: Number, unit: string}} Returns the map
+ * @private
+ */
+var getCssPropUnitMap = function getCssPropUnitMap(v) {
+    v.trim();
+    var num = v.match('[0-9\.]+'),
+        unit = 'ms';
+
+    num = num ? num[0] : '';
+    if (num) {
+        unit = v.split(num)[1];
+        num = Number(num);
+    }
+    return {
+        num: num,
+        unit: unit
+    };
+};
+
+/**
+ * Converts a css timing unit value into milliseconds.
+ * @param {string} val - The value string
+ * @returns {string} Returns the timing unit value in milliseconds
+ */
+var convertCssTimeValueToMilliseconds = function convertCssTimeValueToMilliseconds(val) {
+    var number = getCssPropUnitMap(val).num,
+        unit = val.replace(number, '');
+    if (unit === 's') {
+        val = number * 1000;
+    } else {
+        val = number;
+    }
+    return val + 'ms';
+};
+
+/**
+ * Takes a css property name and returns the javascript version of it.
+ * @param {string} cssProp - The css property
+ * @returns {string} Returns the javascript version
+ * @private
+ */
+var getJsPropName = function getJsPropName(cssProp) {
+    // convert to camelCase
+    return cssProp.replace(/-([a-z])/g, function (letter) {
+        return letter[1].toUpperCase();
+    });
+};
+
+/**
+ * Bubbles up each parent node of the element, triggering the callback on each element until traversal
+ * either runs out of parent nodes, reaches the document element, or if callback returns a falsy value
+ * @param {Function} callback - A callback that fires which gets passed the current element
+ * @param {HTMLElement} [startEl] - The element where traversal will begin (including the passed element), defaults to current el
+ */
+var traverseEachParent = function traverseEachParent(callback, startEl) {
+    var parentNode = startEl;
+    var predicate = null;
+    // check if the node has classname property, if not, we know we're at the #document element
+    while (parentNode && typeof parentNode.className === 'string') {
+        predicate = callback(parentNode);
+        if (predicate !== undefined && !predicate) {
+            break;
+        }
+        parentNode = parentNode.parentNode;
+    }
+};
+
+/**
+ * A function that fires when the module's load() method is called
+ * @callback Module~onLoad
+ * @return {*} May return a promise when done
+ */
+
+/**
+ * A function that fires when the module's show() method is called
+ * which can be overridden by subclass custom implementations.
+ * @callback Module~onShow
+ * @return {*} May return a promise when done
+ */
+
+/**
+ * A function that fires when the module's hide() method is called
+ * which can be overridden by subclass custom implementations.
+ * @callback Module~onHide
+ */
+
+/**
+ * A function that fires when the module's enable() method is called
+ * @callback Module~onEnable
+ */
+
+/**
+ * A function that fires when the module's disable() method is called
+ * @callback Module~onDisable
+ */
+
+/**
+ * A function that fires when the error() method is called
+ * @callback Module~onError
+ * @param {Object} [e] - The error object that was triggered
+ */
+
+/**
+ * @class Module
+ * @description Base class that represents all modules of an App.
+ */
+
+var Module = function () {
+
+    /**
+     * Initialization.
+     * @param {HTMLElement} el - The module element
+     * @param {Object} [options] - An object of options
+     * @param {string} [options.loadedClass] - The class that will be applied to the module element when it is loaded
+     * @param {string} [options.activeClass] - The class that will be applied to the module element when it is shown
+     * @param {string} [options.disabledClass] - The class that will be applied to the module element when disabled
+     * @param {string} [options.errorClass] - The class that will be applied to the module element when it has a load error
+     * @param {Array|string} [options.styles] - Array of stylesheet urls or single url
+     * @param {string|HTMLTemplateElement|HTMLElement} [options.template] - The template to load (can be url to html or handlebars file or html template, just an element, or an html string)
+     * @param {Object|string} [options.data] - The data or url to the module's data
+     * @param {Object} [options.requestOptions] - The request options to use when running the fetch method to get data
+     * @param {Module~onLoad} [options.onLoad] - A function that fires when module's load() method is called
+     * @param {Module~onShow} [options.onShow] - A function that fires when module is shown
+     * @param {Module~onHide} [options.onHide] - A function that fires when module is hidden
+     * @param {Module~onEnable} [options.onEnable] - A function that fires when module is enabled
+     * @param {Module~onDisable} [options.onDisable] - A function that fires when module is disabled
+     * @param {Module~onError} [options.onError] - A function that fires when module goes into error state
+     * @param {Object} [options.helpers] - An object containing a mapping of handlebar helper ids (keys) to their functions (values) to use when handlebar compiling
+     */
+    function Module(el, options) {
+        _classCallCheck(this, Module);
+
+        options = options || {};
+
+        if (!el) {
+            console.error("Module error: No element was passed to constructor");
+        }
+
+        this.el = el;
+
+        var defaultOptions = {
+            loadedClass: 'module-loaded',
+            activeClass: 'module-active',
+            disabledClass: 'module-disabled',
+            errorClass: 'module-error',
+            styles: [],
+            template: "",
+            data: null,
+            requestOptions: null,
+            onLoad: function onLoad() {},
+            onShow: function onShow() {},
+            onHide: function onHide() {},
+            onEnable: function onEnable() {},
+            onDisable: function onDisable() {},
+            onError: function onError() {},
+            helpers: {}
+        };
+
+        // we are adding default options to passed custom options
+        // to ensure all expected options exist when instantiating sub classes
+        for (var name in defaultOptions) {
+            if (defaultOptions.hasOwnProperty(name)) {
+                if (!options[name]) {
+                    options[name] = defaultOptions[name];
+                }
+            }
+        }
+
+        this.options = options;
+
+        // setup helpers
+        for (var _name in options.helpers) {
+            if (options.helpers.hasOwnProperty(_name)) {
+                runtime.registerHelper(_name, options.helpers[_name]);
+            }
+        }
+
+        this._handleElementInitialState();
+
+        this.subModules = {};
+        this.active = false;
+        this.loaded = false;
+        this._elChildren = [];
+        this.loadStatus = 'notLoaded';
+    }
+
+    /**
+     * Loads the module's styles, template, and data and applies loaded css classes and state.
+     * @return {Promise}
+     */
+
+
+    _createClass(Module, [{
+        key: 'load',
+        value: function load() {
+            var _this = this;
+
+            if (!this.loaded) {
+                this.loadStatus = 'loading';
+                // load all subModules
+                var loadPromises = [];
+                for (var key in this.subModules) {
+                    if (this.subModules.hasOwnProperty(key)) {
+                        var view = this.subModules[key];
+                        loadPromises.push(view.load());
+                    }
+                }
+                return Promise.all(loadPromises).then(function () {
+                    return _this.getStyles(_this.options.styles).then(function () {
+                        return _this.fetchData(_this.options.data, _this.options.requestOptions).then(function (data) {
+                            return _this.getTemplate(data).then(function (nodes) {
+                                nodes = nodes || [];
+                                var frag = document.createDocumentFragment();
+                                // hold reference to children to remove them later
+                                while (nodes.length) {
+                                    // order matters here so we always start from the first node
+                                    var node = nodes[0];
+                                    _this._elChildren.push(node);
+                                    // appending child changes length of nodes array
+                                    frag.appendChild(node);
+                                }
+                                _this.el.appendChild(frag);
+                                _this.loaded = true;
+                                _this.loadStatus = 'loaded';
+                                if (_this.el) {
+                                    _this.el.classList.add(_this.options.loadedClass);
+                                }
+                                _this.options.onLoad();
+                            });
+                        });
+                    });
+                }).catch(function (e) {
+                    _this.error(e);
+                    // throw error to reject promise
+                    throw e;
+                });
+            } else {
+                return Promise.resolve();
+            }
+        }
+
+        /**
+         * Makes a request to get the data for the module.
+         * @param {string|Object} url - The url to fetch data from or data object
+         * @param [options] - fetch options
+         * @returns {*}
+         */
+
+    }, {
+        key: 'fetchData',
+        value: function fetchData(url, options) {
+            if (typeof url !== 'string') {
+                return Promise.resolve(url);
+            }
+            return _resourceManagerJs2.default.fetchData(url, options);
+        }
+
+        /**
+         * Gets the css files for the module.
+         * @param cssUrl
+         * @return {Promise}
+         */
+
+    }, {
+        key: 'getStyles',
+        value: function getStyles(cssUrl) {
+            return _resourceManagerJs2.default.loadCss(cssUrl);
+        }
+
+        /**
+         * Gets the html template for the module.
+         * @param {Object} [data] - The data to inject (if template is a handlebar file)
+         * @returns {Promise} Returns a document fragment containing the contents of the template with the data injected
+         */
+
+    }, {
+        key: 'getTemplate',
+        value: function getTemplate(data) {
+            var template = this.options.template || '';
+
+            if (!template) {
+                return Promise.resolve();
+            }
+
+            var isHandlebarFile = function isHandlebarFile(filePath) {
+                if (filePath) {
+                    var frags = filePath.split('.');
+                    var ext = frags[frags.length - 1];
+                    return ext === 'hbs';
+                }
+            };
+
+            if (this._isHTMLTemplate(template)) {
+                // template element
+                // TODO: update to accommodate situations where the user wants to adoptNode instead of cloning it
+                var tpl = document.importNode(template.content, true);
+                return Promise.resolve(tpl.childNodes);
+            } else if (template instanceof HTMLElement) {
+                // already an html element
+                var frag = document.createDocumentFragment();
+                frag.appendChild(template);
+                return Promise.resolve(frag.childNodes);
+            } else {
+                // html or handlebar file
+                var tempDiv = document.createElement('div');
+                return _resourceManagerJs2.default.loadTemplate(template, tempDiv, data).then(function (html) {
+                    return tempDiv.childNodes;
+                });
+            }
+        }
+
+        /**
+         * Checks if the provided template argument is indeed an html template element.
+         * This is mainly for testing purposes where phantom is not aware of HTMLTemplateElement
+         * @param template
+         * @returns {boolean}
+         * @private
+         */
+
+    }, {
+        key: '_isHTMLTemplate',
+        value: function _isHTMLTemplate(template) {
+            return template instanceof HTMLTemplateElement;
+        }
+
+        /**
+         * Triggers a load error on the module.
+         * @param {Object} [err] - The error object to trigger
+         * @return {Promise} Returns a promise when erroring operation is complete
+         */
+
+    }, {
+        key: 'error',
+        value: function error(err) {
+            var e = err || new Error();
+
+            this.el.classList.add(this.options.errorClass);
+
+            this.errored = true;
+            this.loaded = false;
+            this.loadStatus = 'notLoaded';
+
+            this.options.onError(e);
+            return this.waitForTransition().then(function () {
+                return e;
+            });
+        }
+
+        /**
+         * Enables the module.
+         * @return {Promise}
+         */
+
+    }, {
+        key: 'enable',
+        value: function enable() {
+            var el = this.el;
+            if (el) {
+                el.classList.remove(this.options.disabledClass);
+            }
+            this.disabled = false;
+            this.options.onEnable();
+            return this.waitForTransition();
+        }
+
+        /**
+         * Disables the module.
+         * @return {Promise}
+         */
+
+    }, {
+        key: 'disable',
+        value: function disable() {
+            var el = this.el;
+            if (el) {
+                el.classList.add(this.options.disabledClass);
+            }
+            this.disabled = true;
+
+            this.options.onDisable();
+            return this.waitForTransition();
+        }
+
+        /**
+         * Shows the module.
+         * @return {Promise}
+         */
+
+    }, {
+        key: 'show',
+        value: function show() {
+            var el = this.el;
+            if (el) {
+                el.classList.add(this.options.activeClass);
+            }
+            this.active = true;
+            this.options.onShow();
+            return this.waitForTransition();
+        }
+
+        /**
+         * Hides the module.
+         * @return {Promise}
+         */
+
+    }, {
+        key: 'hide',
+        value: function hide() {
+            var el = this.el;
+            if (el) {
+                el.classList.remove(this.options.activeClass);
+            }
+            this.active = false;
+            this.options.onHide();
+            return this.waitForTransition();
+        }
+
+        /**
+         * Sets up element internally by evaluating its initial state.
+         * @private
+         */
+
+    }, {
+        key: '_handleElementInitialState',
+        value: function _handleElementInitialState() {
+            var el = this.el;
+            if (!el) {
+                return;
+            }
+            if (el.classList.contains(this.options.disabledClass)) {
+                this._origDisabled = true;
+                this.disable();
+            }
+
+            if (el.classList.contains(this.options.errorClass)) {
+                this._origError = true;
+                this.error(new Error());
+            }
+        }
+
+        /**
+         * Restores the elements classes back to the way they were before instantiation.
+         * @private
+         */
+
+    }, {
+        key: '_resetElementInitialState',
+        value: function _resetElementInitialState() {
+            var options = this.options,
+                disabledClass = options.disabledClass,
+                errorClass = options.errorClass;
+
+            if (!this.el) {
+                return;
+            }
+            if (this._origDisabled) {
+                this.el.classList.add(disabledClass);
+            } else {
+                this.el.classList.remove(disabledClass);
+            }
+
+            if (!this._origError) {
+                this.el.classList.remove(errorClass);
+            } else {
+                this.el.classList.add(errorClass);
+            }
+        }
+
+        /**
+         * Builds a transition promise that waits to resolve until the module el's CSS transition is completed (if applicable).
+         * @returns {Promise} Returns a promise that resolves when the element has finished animating
+         */
+
+    }, {
+        key: 'waitForTransition',
+        value: function waitForTransition() {
+            var _this2 = this;
+
+            var duration = this.getTransitionDuration();
+            return new Promise(function (resolve) {
+                if (duration > 0) {
+                    setTimeout(resolve.bind(_this2, _this2.el), duration);
+                } else {
+                    resolve(_this2.el);
+                }
+            });
+        }
+
+        /**
+         * Gets the time is takes for the element to transition to its show state.
+         * @returns {Number} Returns the total CSS transition time in milliseconds
+         */
+
+    }, {
+        key: 'getTransitionDuration',
+        value: function getTransitionDuration() {
+            var delayProp = this.getCssComputedProperty('transition-delay') || '0ms',
+                durationProp = this.getCssComputedProperty('transition-duration') || '0ms',
+                times = Array.isArray(durationProp) ? durationProp : [durationProp],
+                delay = Array.isArray(delayProp) ? delayProp : [delayProp],
+                highest = 0,
+                map = void 0;
+
+            times.push.apply(times, delay); // account for delay
+
+            // calculate highest number of time
+            times.forEach(function (value) {
+                value.split(',').forEach(function (v) {
+                    v = convertCssTimeValueToMilliseconds(v);
+                    map = getCssPropUnitMap(v);
+                    if (map.num > highest) {
+                        highest = map.num;
+                    }
+                });
+            });
+
+            return highest;
+        }
+
+        /**
+         * Gets the computed property of the element.
+         * @param {string} prop - The name of the property to get
+         * @returns {string} Returns the value of the property
+         */
+
+    }, {
+        key: 'getCssComputedProperty',
+        value: function getCssComputedProperty(prop) {
+            var style = window.getComputedStyle(this.el);
+            return style.getPropertyValue(prop) || this.el.style[getJsPropName(prop)];
+        }
+
+        /**
+         * Gets the closest ancestor element that has a css class.
+         * @param {string} className - The class name that the ancestor must have to match
+         * @param {Element} startTarget - The element the method should start from
+         */
+
+    }, {
+        key: 'getClosestAncestorElementByClassName',
+        value: function getClosestAncestorElementByClassName(className, startTarget) {
+            var result = null;
+            traverseEachParent(function (parent) {
+                if (parent.classList.contains(className)) {
+                    result = parent;
+                    return false;
+                }
+            }, startTarget || this.el.parentNode || this.el);
+            return result;
+        }
+
+        /**
+         * Destroys all nested views and cleans up.
+         */
+
+    }, {
+        key: 'destroy',
+        value: function destroy() {
+            var _this3 = this;
+
+            var subModules = this.subModules;
+
+            for (var key in subModules) {
+                if (subModules.hasOwnProperty(key) && subModules[key]) {
+                    subModules[key].destroy();
+                }
+            }
+            this.subModules = {};
+            this.active = false;
+            this.loaded = false;
+            this.errored = false;
+            this.loadStatus = 'notLoaded';
+
+            this.el.classList.remove(this.options.loadedClass);
+            this.el.classList.remove(this.options.activeClass);
+
+            this._resetElementInitialState();
+
+            this._elChildren.forEach(function (el) {
+                if (_this3.el.contains(el)) {
+                    _this3.el.removeChild(el);
+                }
+            });
+            this._elChildren = [];
+        }
+    }]);
+
+    return Module;
+}();
+
+exports.default = Module;
+
+},{"es6-promise":7,"handlebars/runtime":49,"resource-manager-js":50}],53:[function(require,module,exports){
+'use strict';
+
+module.exports = require('./lib')
+
+},{"./lib":58}],54:[function(require,module,exports){
+'use strict';
+
+var asap = require('asap/raw');
+
+function noop() {}
+
+// States:
+//
+// 0 - pending
+// 1 - fulfilled with _value
+// 2 - rejected with _value
+// 3 - adopted the state of another promise, _value
+//
+// once the state is no longer pending (0) it is immutable
+
+// All `_` prefixed properties will be reduced to `_{random number}`
+// at build time to obfuscate them and discourage their use.
+// We don't use symbols or Object.defineProperty to fully hide them
+// because the performance isn't good enough.
+
+
+// to avoid using try/catch inside critical functions, we
+// extract them to here.
+var LAST_ERROR = null;
+var IS_ERROR = {};
+function getThen(obj) {
+  try {
+    return obj.then;
+  } catch (ex) {
+    LAST_ERROR = ex;
+    return IS_ERROR;
+  }
+}
+
+function tryCallOne(fn, a) {
+  try {
+    return fn(a);
+  } catch (ex) {
+    LAST_ERROR = ex;
+    return IS_ERROR;
+  }
+}
+function tryCallTwo(fn, a, b) {
+  try {
+    fn(a, b);
+  } catch (ex) {
+    LAST_ERROR = ex;
+    return IS_ERROR;
+  }
+}
+
+module.exports = Promise;
+
+function Promise(fn) {
+  if (typeof this !== 'object') {
+    throw new TypeError('Promises must be constructed via new');
+  }
+  if (typeof fn !== 'function') {
+    throw new TypeError('not a function');
+  }
+  this._45 = 0;
+  this._81 = 0;
+  this._65 = null;
+  this._54 = null;
+  if (fn === noop) return;
+  doResolve(fn, this);
+}
+Promise._10 = null;
+Promise._97 = null;
+Promise._61 = noop;
+
+Promise.prototype.then = function(onFulfilled, onRejected) {
+  if (this.constructor !== Promise) {
+    return safeThen(this, onFulfilled, onRejected);
+  }
+  var res = new Promise(noop);
+  handle(this, new Handler(onFulfilled, onRejected, res));
+  return res;
+};
+
+function safeThen(self, onFulfilled, onRejected) {
+  return new self.constructor(function (resolve, reject) {
+    var res = new Promise(noop);
+    res.then(resolve, reject);
+    handle(self, new Handler(onFulfilled, onRejected, res));
+  });
+};
+function handle(self, deferred) {
+  while (self._81 === 3) {
+    self = self._65;
+  }
+  if (Promise._10) {
+    Promise._10(self);
+  }
+  if (self._81 === 0) {
+    if (self._45 === 0) {
+      self._45 = 1;
+      self._54 = deferred;
+      return;
+    }
+    if (self._45 === 1) {
+      self._45 = 2;
+      self._54 = [self._54, deferred];
+      return;
+    }
+    self._54.push(deferred);
+    return;
+  }
+  handleResolved(self, deferred);
+}
+
+function handleResolved(self, deferred) {
+  asap(function() {
+    var cb = self._81 === 1 ? deferred.onFulfilled : deferred.onRejected;
+    if (cb === null) {
+      if (self._81 === 1) {
+        resolve(deferred.promise, self._65);
+      } else {
+        reject(deferred.promise, self._65);
+      }
+      return;
+    }
+    var ret = tryCallOne(cb, self._65);
+    if (ret === IS_ERROR) {
+      reject(deferred.promise, LAST_ERROR);
+    } else {
+      resolve(deferred.promise, ret);
+    }
+  });
+}
+function resolve(self, newValue) {
+  // Promise Resolution Procedure: https://github.com/promises-aplus/promises-spec#the-promise-resolution-procedure
+  if (newValue === self) {
+    return reject(
+      self,
+      new TypeError('A promise cannot be resolved with itself.')
+    );
+  }
+  if (
+    newValue &&
+    (typeof newValue === 'object' || typeof newValue === 'function')
+  ) {
+    var then = getThen(newValue);
+    if (then === IS_ERROR) {
+      return reject(self, LAST_ERROR);
+    }
+    if (
+      then === self.then &&
+      newValue instanceof Promise
+    ) {
+      self._81 = 3;
+      self._65 = newValue;
+      finale(self);
+      return;
+    } else if (typeof then === 'function') {
+      doResolve(then.bind(newValue), self);
+      return;
+    }
+  }
+  self._81 = 1;
+  self._65 = newValue;
+  finale(self);
+}
+
+function reject(self, newValue) {
+  self._81 = 2;
+  self._65 = newValue;
+  if (Promise._97) {
+    Promise._97(self, newValue);
+  }
+  finale(self);
+}
+function finale(self) {
+  if (self._45 === 1) {
+    handle(self, self._54);
+    self._54 = null;
+  }
+  if (self._45 === 2) {
+    for (var i = 0; i < self._54.length; i++) {
+      handle(self, self._54[i]);
+    }
+    self._54 = null;
+  }
+}
+
+function Handler(onFulfilled, onRejected, promise){
+  this.onFulfilled = typeof onFulfilled === 'function' ? onFulfilled : null;
+  this.onRejected = typeof onRejected === 'function' ? onRejected : null;
+  this.promise = promise;
+}
+
+/**
+ * Take a potentially misbehaving resolver function and make sure
+ * onFulfilled and onRejected are only called once.
+ *
+ * Makes no guarantees about asynchrony.
+ */
+function doResolve(fn, promise) {
+  var done = false;
+  var res = tryCallTwo(fn, function (value) {
+    if (done) return;
+    done = true;
+    resolve(promise, value);
+  }, function (reason) {
+    if (done) return;
+    done = true;
+    reject(promise, reason);
+  })
+  if (!done && res === IS_ERROR) {
+    done = true;
+    reject(promise, LAST_ERROR);
+  }
+}
+
+},{"asap/raw":6}],55:[function(require,module,exports){
+'use strict';
+
+var Promise = require('./core.js');
+
+module.exports = Promise;
+Promise.prototype.done = function (onFulfilled, onRejected) {
+  var self = arguments.length ? this.then.apply(this, arguments) : this;
+  self.then(null, function (err) {
+    setTimeout(function () {
+      throw err;
+    }, 0);
+  });
+};
+
+},{"./core.js":54}],56:[function(require,module,exports){
+'use strict';
+
+//This file contains the ES6 extensions to the core Promises/A+ API
+
+var Promise = require('./core.js');
+
+module.exports = Promise;
+
+/* Static Functions */
+
+var TRUE = valuePromise(true);
+var FALSE = valuePromise(false);
+var NULL = valuePromise(null);
+var UNDEFINED = valuePromise(undefined);
+var ZERO = valuePromise(0);
+var EMPTYSTRING = valuePromise('');
+
+function valuePromise(value) {
+  var p = new Promise(Promise._61);
+  p._81 = 1;
+  p._65 = value;
+  return p;
+}
+Promise.resolve = function (value) {
+  if (value instanceof Promise) return value;
+
+  if (value === null) return NULL;
+  if (value === undefined) return UNDEFINED;
+  if (value === true) return TRUE;
+  if (value === false) return FALSE;
+  if (value === 0) return ZERO;
+  if (value === '') return EMPTYSTRING;
+
+  if (typeof value === 'object' || typeof value === 'function') {
+    try {
+      var then = value.then;
+      if (typeof then === 'function') {
+        return new Promise(then.bind(value));
+      }
+    } catch (ex) {
+      return new Promise(function (resolve, reject) {
+        reject(ex);
+      });
+    }
+  }
+  return valuePromise(value);
+};
+
+Promise.all = function (arr) {
+  var args = Array.prototype.slice.call(arr);
+
+  return new Promise(function (resolve, reject) {
+    if (args.length === 0) return resolve([]);
+    var remaining = args.length;
+    function res(i, val) {
+      if (val && (typeof val === 'object' || typeof val === 'function')) {
+        if (val instanceof Promise && val.then === Promise.prototype.then) {
+          while (val._81 === 3) {
+            val = val._65;
+          }
+          if (val._81 === 1) return res(i, val._65);
+          if (val._81 === 2) reject(val._65);
+          val.then(function (val) {
+            res(i, val);
+          }, reject);
+          return;
+        } else {
+          var then = val.then;
+          if (typeof then === 'function') {
+            var p = new Promise(then.bind(val));
+            p.then(function (val) {
+              res(i, val);
+            }, reject);
+            return;
+          }
+        }
+      }
+      args[i] = val;
+      if (--remaining === 0) {
+        resolve(args);
+      }
+    }
+    for (var i = 0; i < args.length; i++) {
+      res(i, args[i]);
+    }
+  });
+};
+
+Promise.reject = function (value) {
+  return new Promise(function (resolve, reject) {
+    reject(value);
+  });
+};
+
+Promise.race = function (values) {
+  return new Promise(function (resolve, reject) {
+    values.forEach(function(value){
+      Promise.resolve(value).then(resolve, reject);
+    });
+  });
+};
+
+/* Prototype Methods */
+
+Promise.prototype['catch'] = function (onRejected) {
+  return this.then(null, onRejected);
+};
+
+},{"./core.js":54}],57:[function(require,module,exports){
+'use strict';
+
+var Promise = require('./core.js');
+
+module.exports = Promise;
+Promise.prototype['finally'] = function (f) {
+  return this.then(function (value) {
+    return Promise.resolve(f()).then(function () {
+      return value;
+    });
+  }, function (err) {
+    return Promise.resolve(f()).then(function () {
+      throw err;
+    });
+  });
+};
+
+},{"./core.js":54}],58:[function(require,module,exports){
+'use strict';
+
+module.exports = require('./core.js');
+require('./done.js');
+require('./finally.js');
+require('./es6-extensions.js');
+require('./node-extensions.js');
+require('./synchronous.js');
+
+},{"./core.js":54,"./done.js":55,"./es6-extensions.js":56,"./finally.js":57,"./node-extensions.js":59,"./synchronous.js":60}],59:[function(require,module,exports){
+'use strict';
+
+// This file contains then/promise specific extensions that are only useful
+// for node.js interop
+
+var Promise = require('./core.js');
+var asap = require('asap');
+
+module.exports = Promise;
+
+/* Static Functions */
+
+Promise.denodeify = function (fn, argumentCount) {
+  if (
+    typeof argumentCount === 'number' && argumentCount !== Infinity
+  ) {
+    return denodeifyWithCount(fn, argumentCount);
+  } else {
+    return denodeifyWithoutCount(fn);
+  }
+}
+
+var callbackFn = (
+  'function (err, res) {' +
+  'if (err) { rj(err); } else { rs(res); }' +
+  '}'
+);
+function denodeifyWithCount(fn, argumentCount) {
+  var args = [];
+  for (var i = 0; i < argumentCount; i++) {
+    args.push('a' + i);
+  }
+  var body = [
+    'return function (' + args.join(',') + ') {',
+    'var self = this;',
+    'return new Promise(function (rs, rj) {',
+    'var res = fn.call(',
+    ['self'].concat(args).concat([callbackFn]).join(','),
+    ');',
+    'if (res &&',
+    '(typeof res === "object" || typeof res === "function") &&',
+    'typeof res.then === "function"',
+    ') {rs(res);}',
+    '});',
+    '};'
+  ].join('');
+  return Function(['Promise', 'fn'], body)(Promise, fn);
+}
+function denodeifyWithoutCount(fn) {
+  var fnLength = Math.max(fn.length - 1, 3);
+  var args = [];
+  for (var i = 0; i < fnLength; i++) {
+    args.push('a' + i);
+  }
+  var body = [
+    'return function (' + args.join(',') + ') {',
+    'var self = this;',
+    'var args;',
+    'var argLength = arguments.length;',
+    'if (arguments.length > ' + fnLength + ') {',
+    'args = new Array(arguments.length + 1);',
+    'for (var i = 0; i < arguments.length; i++) {',
+    'args[i] = arguments[i];',
+    '}',
+    '}',
+    'return new Promise(function (rs, rj) {',
+    'var cb = ' + callbackFn + ';',
+    'var res;',
+    'switch (argLength) {',
+    args.concat(['extra']).map(function (_, index) {
+      return (
+        'case ' + (index) + ':' +
+        'res = fn.call(' + ['self'].concat(args.slice(0, index)).concat('cb').join(',') + ');' +
+        'break;'
+      );
+    }).join(''),
+    'default:',
+    'args[argLength] = cb;',
+    'res = fn.apply(self, args);',
+    '}',
+    
+    'if (res &&',
+    '(typeof res === "object" || typeof res === "function") &&',
+    'typeof res.then === "function"',
+    ') {rs(res);}',
+    '});',
+    '};'
+  ].join('');
+
+  return Function(
+    ['Promise', 'fn'],
+    body
+  )(Promise, fn);
+}
+
+Promise.nodeify = function (fn) {
+  return function () {
+    var args = Array.prototype.slice.call(arguments);
+    var callback =
+      typeof args[args.length - 1] === 'function' ? args.pop() : null;
+    var ctx = this;
+    try {
+      return fn.apply(this, arguments).nodeify(callback, ctx);
+    } catch (ex) {
+      if (callback === null || typeof callback == 'undefined') {
+        return new Promise(function (resolve, reject) {
+          reject(ex);
+        });
+      } else {
+        asap(function () {
+          callback.call(ctx, ex);
+        })
+      }
+    }
+  }
+}
+
+Promise.prototype.nodeify = function (callback, ctx) {
+  if (typeof callback != 'function') return this;
+
+  this.then(function (value) {
+    asap(function () {
+      callback.call(ctx, null, value);
+    });
+  }, function (err) {
+    asap(function () {
+      callback.call(ctx, err);
+    });
+  });
+}
+
+},{"./core.js":54,"asap":5}],60:[function(require,module,exports){
+'use strict';
+
+var Promise = require('./core.js');
+
+module.exports = Promise;
+Promise.enableSynchronous = function () {
+  Promise.prototype.isPending = function() {
+    return this.getState() == 0;
+  };
+
+  Promise.prototype.isFulfilled = function() {
+    return this.getState() == 1;
+  };
+
+  Promise.prototype.isRejected = function() {
+    return this.getState() == 2;
+  };
+
+  Promise.prototype.getValue = function () {
+    if (this._81 === 3) {
+      return this._65.getValue();
+    }
+
+    if (!this.isFulfilled()) {
+      throw new Error('Cannot get a value of an unfulfilled promise.');
+    }
+
+    return this._65;
+  };
+
+  Promise.prototype.getReason = function () {
+    if (this._81 === 3) {
+      return this._65.getReason();
+    }
+
+    if (!this.isRejected()) {
+      throw new Error('Cannot get a rejection reason of a non-rejected promise.');
+    }
+
+    return this._65;
+  };
+
+  Promise.prototype.getState = function () {
+    if (this._81 === 3) {
+      return this._65.getState();
+    }
+    if (this._81 === -1 || this._81 === -2) {
+      return 0;
+    }
+
+    return this._81;
+  };
+};
+
+Promise.disableSynchronous = function() {
+  Promise.prototype.isPending = undefined;
+  Promise.prototype.isFulfilled = undefined;
+  Promise.prototype.isRejected = undefined;
+  Promise.prototype.getValue = undefined;
+  Promise.prototype.getReason = undefined;
+  Promise.prototype.getState = undefined;
+};
+
+},{"./core.js":54}],61:[function(require,module,exports){
 'use strict';
 
 /**
@@ -11550,7 +11970,7 @@ exports.default = CarouselArrows;
 
 module.exports = exports['default'];
 
-},{}],59:[function(require,module,exports){
+},{}],62:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -11682,7 +12102,7 @@ exports.default = CarouselPanel;
 
 module.exports = exports['default'];
 
-},{"module-js":37,"promise":38}],60:[function(require,module,exports){
+},{"module-js":52,"promise":53}],63:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -11924,7 +12344,7 @@ exports.default = CarouselPanels;
 
 module.exports = exports['default'];
 
-},{"./carousel-panel":59,"promise":38}],61:[function(require,module,exports){
+},{"./carousel-panel":62,"promise":53}],64:[function(require,module,exports){
 'use strict';
 
 /**
@@ -12111,7 +12531,7 @@ exports.default = CarouselThumbs;
 
 module.exports = exports['default'];
 
-},{}],62:[function(require,module,exports){
+},{}],65:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -12448,417 +12868,5 @@ exports.default = Carousel;
 
 module.exports = exports['default'];
 
-},{"./carousel-arrows":58,"./carousel-panels":60,"./carousel-thumbs":61}],63:[function(require,module,exports){
-
-},{}],64:[function(require,module,exports){
-(function (process){
-// Copyright Joyent, Inc. and other Node contributors.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a
-// copy of this software and associated documentation files (the
-// "Software"), to deal in the Software without restriction, including
-// without limitation the rights to use, copy, modify, merge, publish,
-// distribute, sublicense, and/or sell copies of the Software, and to permit
-// persons to whom the Software is furnished to do so, subject to the
-// following conditions:
-//
-// The above copyright notice and this permission notice shall be included
-// in all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
-// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
-// USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-// resolves . and .. elements in a path array with directory names there
-// must be no slashes, empty elements, or device names (c:\) in the array
-// (so also no leading and trailing slashes - it does not distinguish
-// relative and absolute paths)
-function normalizeArray(parts, allowAboveRoot) {
-  // if the path tries to go above the root, `up` ends up > 0
-  var up = 0;
-  for (var i = parts.length - 1; i >= 0; i--) {
-    var last = parts[i];
-    if (last === '.') {
-      parts.splice(i, 1);
-    } else if (last === '..') {
-      parts.splice(i, 1);
-      up++;
-    } else if (up) {
-      parts.splice(i, 1);
-      up--;
-    }
-  }
-
-  // if the path is allowed to go above the root, restore leading ..s
-  if (allowAboveRoot) {
-    for (; up--; up) {
-      parts.unshift('..');
-    }
-  }
-
-  return parts;
-}
-
-// Split a filename into [root, dir, basename, ext], unix version
-// 'root' is just a slash, or nothing.
-var splitPathRe =
-    /^(\/?|)([\s\S]*?)((?:\.{1,2}|[^\/]+?|)(\.[^.\/]*|))(?:[\/]*)$/;
-var splitPath = function(filename) {
-  return splitPathRe.exec(filename).slice(1);
-};
-
-// path.resolve([from ...], to)
-// posix version
-exports.resolve = function() {
-  var resolvedPath = '',
-      resolvedAbsolute = false;
-
-  for (var i = arguments.length - 1; i >= -1 && !resolvedAbsolute; i--) {
-    var path = (i >= 0) ? arguments[i] : process.cwd();
-
-    // Skip empty and invalid entries
-    if (typeof path !== 'string') {
-      throw new TypeError('Arguments to path.resolve must be strings');
-    } else if (!path) {
-      continue;
-    }
-
-    resolvedPath = path + '/' + resolvedPath;
-    resolvedAbsolute = path.charAt(0) === '/';
-  }
-
-  // At this point the path should be resolved to a full absolute path, but
-  // handle relative paths to be safe (might happen when process.cwd() fails)
-
-  // Normalize the path
-  resolvedPath = normalizeArray(filter(resolvedPath.split('/'), function(p) {
-    return !!p;
-  }), !resolvedAbsolute).join('/');
-
-  return ((resolvedAbsolute ? '/' : '') + resolvedPath) || '.';
-};
-
-// path.normalize(path)
-// posix version
-exports.normalize = function(path) {
-  var isAbsolute = exports.isAbsolute(path),
-      trailingSlash = substr(path, -1) === '/';
-
-  // Normalize the path
-  path = normalizeArray(filter(path.split('/'), function(p) {
-    return !!p;
-  }), !isAbsolute).join('/');
-
-  if (!path && !isAbsolute) {
-    path = '.';
-  }
-  if (path && trailingSlash) {
-    path += '/';
-  }
-
-  return (isAbsolute ? '/' : '') + path;
-};
-
-// posix version
-exports.isAbsolute = function(path) {
-  return path.charAt(0) === '/';
-};
-
-// posix version
-exports.join = function() {
-  var paths = Array.prototype.slice.call(arguments, 0);
-  return exports.normalize(filter(paths, function(p, index) {
-    if (typeof p !== 'string') {
-      throw new TypeError('Arguments to path.join must be strings');
-    }
-    return p;
-  }).join('/'));
-};
-
-
-// path.relative(from, to)
-// posix version
-exports.relative = function(from, to) {
-  from = exports.resolve(from).substr(1);
-  to = exports.resolve(to).substr(1);
-
-  function trim(arr) {
-    var start = 0;
-    for (; start < arr.length; start++) {
-      if (arr[start] !== '') break;
-    }
-
-    var end = arr.length - 1;
-    for (; end >= 0; end--) {
-      if (arr[end] !== '') break;
-    }
-
-    if (start > end) return [];
-    return arr.slice(start, end - start + 1);
-  }
-
-  var fromParts = trim(from.split('/'));
-  var toParts = trim(to.split('/'));
-
-  var length = Math.min(fromParts.length, toParts.length);
-  var samePartsLength = length;
-  for (var i = 0; i < length; i++) {
-    if (fromParts[i] !== toParts[i]) {
-      samePartsLength = i;
-      break;
-    }
-  }
-
-  var outputParts = [];
-  for (var i = samePartsLength; i < fromParts.length; i++) {
-    outputParts.push('..');
-  }
-
-  outputParts = outputParts.concat(toParts.slice(samePartsLength));
-
-  return outputParts.join('/');
-};
-
-exports.sep = '/';
-exports.delimiter = ':';
-
-exports.dirname = function(path) {
-  var result = splitPath(path),
-      root = result[0],
-      dir = result[1];
-
-  if (!root && !dir) {
-    // No dirname whatsoever
-    return '.';
-  }
-
-  if (dir) {
-    // It has a dirname, strip trailing slash
-    dir = dir.substr(0, dir.length - 1);
-  }
-
-  return root + dir;
-};
-
-
-exports.basename = function(path, ext) {
-  var f = splitPath(path)[2];
-  // TODO: make this comparison case-insensitive on windows?
-  if (ext && f.substr(-1 * ext.length) === ext) {
-    f = f.substr(0, f.length - ext.length);
-  }
-  return f;
-};
-
-
-exports.extname = function(path) {
-  return splitPath(path)[3];
-};
-
-function filter (xs, f) {
-    if (xs.filter) return xs.filter(f);
-    var res = [];
-    for (var i = 0; i < xs.length; i++) {
-        if (f(xs[i], i, xs)) res.push(xs[i]);
-    }
-    return res;
-}
-
-// String.prototype.substr - negative index don't work in IE8
-var substr = 'ab'.substr(-1) === 'b'
-    ? function (str, start, len) { return str.substr(start, len) }
-    : function (str, start, len) {
-        if (start < 0) start = str.length + start;
-        return str.substr(start, len);
-    }
-;
-
-}).call(this,require('_process'))
-},{"_process":65}],65:[function(require,module,exports){
-// shim for using process in browser
-var process = module.exports = {};
-
-// cached from whatever global is present so that test runners that stub it
-// don't break things.  But we need to wrap it in a try catch in case it is
-// wrapped in strict mode code which doesn't define any globals.  It's inside a
-// function because try/catches deoptimize in certain engines.
-
-var cachedSetTimeout;
-var cachedClearTimeout;
-
-function defaultSetTimout() {
-    throw new Error('setTimeout has not been defined');
-}
-function defaultClearTimeout () {
-    throw new Error('clearTimeout has not been defined');
-}
-(function () {
-    try {
-        if (typeof setTimeout === 'function') {
-            cachedSetTimeout = setTimeout;
-        } else {
-            cachedSetTimeout = defaultSetTimout;
-        }
-    } catch (e) {
-        cachedSetTimeout = defaultSetTimout;
-    }
-    try {
-        if (typeof clearTimeout === 'function') {
-            cachedClearTimeout = clearTimeout;
-        } else {
-            cachedClearTimeout = defaultClearTimeout;
-        }
-    } catch (e) {
-        cachedClearTimeout = defaultClearTimeout;
-    }
-} ())
-function runTimeout(fun) {
-    if (cachedSetTimeout === setTimeout) {
-        //normal enviroments in sane situations
-        return setTimeout(fun, 0);
-    }
-    // if setTimeout wasn't available but was latter defined
-    if ((cachedSetTimeout === defaultSetTimout || !cachedSetTimeout) && setTimeout) {
-        cachedSetTimeout = setTimeout;
-        return setTimeout(fun, 0);
-    }
-    try {
-        // when when somebody has screwed with setTimeout but no I.E. maddness
-        return cachedSetTimeout(fun, 0);
-    } catch(e){
-        try {
-            // When we are in I.E. but the script has been evaled so I.E. doesn't trust the global object when called normally
-            return cachedSetTimeout.call(null, fun, 0);
-        } catch(e){
-            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error
-            return cachedSetTimeout.call(this, fun, 0);
-        }
-    }
-
-
-}
-function runClearTimeout(marker) {
-    if (cachedClearTimeout === clearTimeout) {
-        //normal enviroments in sane situations
-        return clearTimeout(marker);
-    }
-    // if clearTimeout wasn't available but was latter defined
-    if ((cachedClearTimeout === defaultClearTimeout || !cachedClearTimeout) && clearTimeout) {
-        cachedClearTimeout = clearTimeout;
-        return clearTimeout(marker);
-    }
-    try {
-        // when when somebody has screwed with setTimeout but no I.E. maddness
-        return cachedClearTimeout(marker);
-    } catch (e){
-        try {
-            // When we are in I.E. but the script has been evaled so I.E. doesn't  trust the global object when called normally
-            return cachedClearTimeout.call(null, marker);
-        } catch (e){
-            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error.
-            // Some versions of I.E. have different rules for clearTimeout vs setTimeout
-            return cachedClearTimeout.call(this, marker);
-        }
-    }
-
-
-
-}
-var queue = [];
-var draining = false;
-var currentQueue;
-var queueIndex = -1;
-
-function cleanUpNextTick() {
-    if (!draining || !currentQueue) {
-        return;
-    }
-    draining = false;
-    if (currentQueue.length) {
-        queue = currentQueue.concat(queue);
-    } else {
-        queueIndex = -1;
-    }
-    if (queue.length) {
-        drainQueue();
-    }
-}
-
-function drainQueue() {
-    if (draining) {
-        return;
-    }
-    var timeout = runTimeout(cleanUpNextTick);
-    draining = true;
-
-    var len = queue.length;
-    while(len) {
-        currentQueue = queue;
-        queue = [];
-        while (++queueIndex < len) {
-            if (currentQueue) {
-                currentQueue[queueIndex].run();
-            }
-        }
-        queueIndex = -1;
-        len = queue.length;
-    }
-    currentQueue = null;
-    draining = false;
-    runClearTimeout(timeout);
-}
-
-process.nextTick = function (fun) {
-    var args = new Array(arguments.length - 1);
-    if (arguments.length > 1) {
-        for (var i = 1; i < arguments.length; i++) {
-            args[i - 1] = arguments[i];
-        }
-    }
-    queue.push(new Item(fun, args));
-    if (queue.length === 1 && !draining) {
-        runTimeout(drainQueue);
-    }
-};
-
-// v8 likes predictible objects
-function Item(fun, array) {
-    this.fun = fun;
-    this.array = array;
-}
-Item.prototype.run = function () {
-    this.fun.apply(null, this.array);
-};
-process.title = 'browser';
-process.browser = true;
-process.env = {};
-process.argv = [];
-process.version = ''; // empty string to avoid regexp issues
-process.versions = {};
-
-function noop() {}
-
-process.on = noop;
-process.addListener = noop;
-process.once = noop;
-process.off = noop;
-process.removeListener = noop;
-process.removeAllListeners = noop;
-process.emit = noop;
-
-process.binding = function (name) {
-    throw new Error('process.binding is not supported');
-};
-
-process.cwd = function () { return '/' };
-process.chdir = function (dir) {
-    throw new Error('process.chdir is not supported');
-};
-process.umask = function() { return 0; };
-
-},{}]},{},[62])(62)
+},{"./carousel-arrows":61,"./carousel-panels":63,"./carousel-thumbs":64}]},{},[65])(65)
 });
